@@ -7,20 +7,6 @@ export default function CategoryForm() {
     const [categoryName, setCategoryName] = useState('');
     const [categories, setCategories] = useState([])
 
-    useEffect(() => {
-        const storedCategories = JSON.parse(localStorage.getItem('categories')) || [];
-        if (storedCategories.length > 0) {
-            setCategories(storedCategories);
-        } else {
-            const initialCategories = [
-                { id: Date.now().toString(), name: '食費' },
-                { id: (Date.now() + 1).toString(), name: '交通費' },
-            ];
-            setCategories(initialCategories);
-            localStorage.setItem('categories', JSON.stringify(initialCategories))
-        }
-    }, []);
-
     /**
      * 入力フォームの値が変更されるたびに実行、categoryNameの状態を更新
      * @param {ChangeEvent<HTMLInputElement>} event - Input要素の変更イベント
