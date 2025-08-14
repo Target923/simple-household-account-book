@@ -4,6 +4,13 @@ import { useState } from 'react';
 import styles from './ExpenseForm.module.css'
 
 export default function ExpenseForm({ categories }) {
+    const [expense, setExpense] = useState({
+        amount: '',
+        date: '',
+        memo: '',
+        selectedCategory: '',
+    });
+
     return (
         <div className={styles.formContainer}>
             <label htmlFor="selectCategory">カテゴリー選択</label>

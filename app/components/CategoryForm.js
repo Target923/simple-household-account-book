@@ -17,7 +17,7 @@ export default function CategoryForm() {
 
     /**
      * 登録ボタンクリック時に実行、新規カテゴリを保存
-     * @param {MouseEvent<HTMLButtonElement>} event 
+     * @param {MouseEvent<HTMLButtonElement>} event - Button要素の変更イベント 
      */
     function handleClick(event) {
         event.preventDefault();
