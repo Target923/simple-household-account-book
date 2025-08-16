@@ -5,7 +5,7 @@ import styles from './CategoryForm.module.css'
 
 export default function CategoryForm() {
     const [categoryName, setCategoryName] = useState('');
-    const [categories, setCategories] = useState([])
+    const [categories, setCategories] = useState([]);
 
     /**
      * 入力フォームの値が変更されるたびに実行、categoryNameの状態を更新
