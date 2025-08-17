@@ -4,11 +4,13 @@ import styles from "./page.module.css";
 
 import CategoryForm from "./components/CategoryForm";
 import ExpenseForm from "./components/ExpenseForm";
+import ExpenseList from "./components/ExpenseList";
 
 import { useState, useEffect } from "react";
 
 export default function Home() {
   const [categories, setCategories] = useState([]);
+  const [expenses, setExpenses] = useState([]);
   useEffect(() => {
     const storedCategories = JSON.parse(localStorage.getItem('categories')) || [];
     if (storedCategories.length > 0) {
@@ -28,7 +30,9 @@ export default function Home() {
       <h1>理想の家計簿</h1>
       <CategoryForm categories={categories} setCategories={setCategories} />
       <hr />
-      <ExpenseForm categories={categories} />
+      <ExpenseForm categories={categories} setExpenses={setExpenses} />
+      <hr />
+      <ExpenseList expenses={expenses} categories={categories} />
     </main>
   )
 }

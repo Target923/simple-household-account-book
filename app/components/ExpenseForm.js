@@ -3,14 +3,13 @@ import { useState } from 'react';
 
 import styles from './ExpenseForm.module.css'
 
-export default function ExpenseForm({ categories }) {
+export default function ExpenseForm({ categories, setExpenses }) {
     const [expense, setExpense] = useState({
         date: '',
         amount: '',
         memo: '',
         selectedCategory: '',
     });
-    const [expenses, setExpenses] = useState([]);
 
     /**
      * 各入力項目の変更時、expenseの状態を更新
