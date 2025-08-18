@@ -64,9 +64,9 @@ export default function ExpenseForm({ categories, setExpenses }) {
     }
 
     return (
-        <div className={styles.expenseForm}>
-            <ul>
-                <li className={styles.formContainer}>
+        <div className={styles.formInput}>
+            <ul className={styles.formContainer}>
+                <li className={styles.formItem}>
                     <label htmlFor='date'>日付</label>
                     <input
                         type="date"
@@ -77,7 +77,7 @@ export default function ExpenseForm({ categories, setExpenses }) {
                         // value={date.now()}
                     ></input>
                 </li>
-                <li className={styles.formContainer}>
+                <li className={styles.formItem}>
                     <label htmlFor='amount'>使用額</label>
                     <input
                         type="number"
@@ -87,7 +87,7 @@ export default function ExpenseForm({ categories, setExpenses }) {
                         onChange={handleChange}
                     ></input>
                 </li>
-                <li className={styles.formContainer}>
+                <li className={styles.formItem}>
                     <label htmlFor='memo'>メモ</label>
                     <input
                         type='text'
@@ -97,7 +97,7 @@ export default function ExpenseForm({ categories, setExpenses }) {
                         onChange={handleChange}
                     ></input>
                 </li>
-                <li className={styles.formContainer}>
+                <li className={styles.formItem}>
                     <label htmlFor='selectedCategory'>カテゴリー</label>
                     <select
                         id='selectedCategory'
@@ -115,7 +115,7 @@ export default function ExpenseForm({ categories, setExpenses }) {
                     </select>
                 </li>
             </ul>
-            <button className={styles.button} onClick={handleClick}>この内容で登録する</button>
+            <button className={styles.formItem} onClick={handleClick}>この内容で登録する</button>
         </div>
     )
 }
