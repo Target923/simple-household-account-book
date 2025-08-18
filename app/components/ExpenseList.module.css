@@ -1,3 +1,8 @@
 .expenseListContainer {
-    margin: 0 10%;
+    margin: 5% 10%;
+    flex-direction: column;
+    display: flex;
+    flex-direction: column;
+    /* margin-left: auto; */
+    /* margin-right: auto; */
 }

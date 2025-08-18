@@ -22,7 +22,7 @@ export default function ExpenseList({ expenses, categories }) {
     }
 
     return (
-        <div>
+        <div className={styles.expenseListContainer}>
             <Calendar
                 onChange={(date) => setSelectedDate(date)}
                 value={selectedDate}

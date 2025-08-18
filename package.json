@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "calendar-react": "^0.2.2",
     "next": "15.4.6",
     "react": "19.1.0",
     "react-calendar": "^6.0.0",
