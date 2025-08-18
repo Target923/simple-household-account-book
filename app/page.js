@@ -28,6 +28,7 @@ export default function Home() {
   return (
     <main>
       <h1>理想の家計簿</h1>
+      <hr />
       <CategoryForm categories={categories} setCategories={setCategories} />
       <hr />
       <ExpenseForm categories={categories} setExpenses={setExpenses} />

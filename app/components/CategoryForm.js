@@ -44,14 +44,18 @@ export default function CategoryForm({ categories, setCategories }) {
 
     return (
         <div className={styles.formContainer}>
-            <label htmlFor="categoryName">新規カテゴリー名</label>
-            <input
-                type="text"
-                id="categoryName"
-                value={categoryName}
-                onChange={handleChange}
-            ></input>
-            <button onClick={handleClick}>この名前で登録する</button>
+            <div className={styles.inputSection}>
+                <label htmlFor="categoryName">新規カテゴリー名</label>
+                <input
+                    type="text"
+                    id="categoryName"
+                    value={categoryName}
+                    onChange={handleChange}
+                ></input>
+                <button 
+                    onClick={handleClick}
+                >この名前で登録する</button>
+            </div>
 
             <h2>カテゴリ一覧</h2>
             <ul>
