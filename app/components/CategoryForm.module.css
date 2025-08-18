@@ -11,7 +11,7 @@
     margin-left: auto;
     margin-right: auto;
     width: 50vw;
-    gap: 15px;
+    gap: 10px;
 
     background-color: aliceblue;
     padding: 15px 25px;
@@ -33,6 +33,7 @@
     text-align: center;
     padding: 10px;
     border: 2px solid silver;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 1);
 }
 
 .inputSection button {
@@ -43,5 +44,47 @@
     margin-right: auto;
     border: 1px solid silver;
     border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.categoryList {
+    display: flex;
+    flex-direction: column;
+    width: 50%;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 15px;
+    font-size: 1rem;
+    text-align: center;
+    color: black;
+    padding: 25px;
+    gap: 10px;
+
+    background-color: aliceblue;
+    padding: 15px 25px;
+    border-radius: 8px;
+    border: 3px solid silver;
+    box-shadow: 0 4px 5px rgba(255, 255, 255, 0.5);
+}
+
+.categoriesName {
+    color: black;
+    font-weight: bold;
+    list-style-type: none;
+
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 20%;
+    gap: 2px
+}
+
+.categoryName {
+    background-color: silver;
+    padding: 5px 25px;
+    border-radius: 12px;
+    border: 3px solid black;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
 }

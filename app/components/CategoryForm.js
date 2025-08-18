@@ -56,13 +56,19 @@ export default function CategoryForm({ categories, setCategories }) {
                     onClick={handleClick}
                 >この名前で登録する</button>
             </div>
-
-            <h2>カテゴリ一覧</h2>
-            <ul>
-                {categories.map((category) => (
-                    <li key={category.id}>{category.name}</li>
-                ))}
-            </ul>
+            <div className={styles.categoryList}>
+                <h2>カテゴリ一覧</h2>
+                <ul className={styles.categoriesName}>
+                    {categories.map((category) => (
+                        <li
+                            className={styles.categoryName}
+                            key={category.id}
+                        >
+                            {category.name}
+                        </li>
+                    ))}
+                </ul>
+            </div>
         </div>
     );
 }
