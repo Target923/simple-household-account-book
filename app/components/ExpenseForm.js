@@ -43,7 +43,7 @@ export default function ExpenseForm({ categories, setExpenses }) {
         const newExpense = {
             id: Date.now().toString(),
             date: expense.date,
-            amount: expense.amount,
+            amount: Number(expense.amount) || 0,
             memo: expense.memo,
             selectedCategory: expense.selectedCategory,
             selectedCategoryName: categoryName,
@@ -105,6 +105,8 @@ export default function ExpenseForm({ categories, setExpenses }) {
                         value={expense.selectedCategory}
                         onChange={handleChange}
                     >
+                        <option value="">-- カテゴリーを選択 --</option>
+
                         {categories.map((category) => (
                         <option key={category.id} value={category.id}>
                             {category.name}
