@@ -47,29 +47,31 @@ export default function ExpenseList({ expenses, categories }) {
         if (percentage === '0') return null;
 
         return (
-            <text x={x} y={y} fill="black" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize="12">
-            <tspan x={x} dy="-0.5em">{data.name}</tspan>
-            <tspan x={x} dy="1em">{`${percentage}%`}</tspan>
+            <text x={x} y={y} fill="black" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize="20">
+            <tspan x={x} dy="-0.5em">{`${data.name} ${percentage}%`}</tspan>
             <tspan x={x} dy="1em">{`${data.value}円`}</tspan>
             </text>
         );
     };
 
     const renderChart = () => {
-        if (aggregatedData.length === 0) {
+        const totalAmount = filteredExpenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
+        if (totalAmount === 0) {
             return <p className="text-center text-gray-500">データがありません</p>
         }
 
+        const filteredData = aggregatedData.filter(d => d.value > 0);
+
         return (
-            <ResponsiveContainer width="100%" height={400}>
+            <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                     <Pie
-                        data={aggregatedData}
+                        data={filteredData}
                         dataKey="value"
                         nameKey="name"
                         cx="50%"
                         cy="50%"
-                        outerRadius={150}
+                        outerRadius={300}
                         fill="#8884d8"
                         labelLine={false}
                         label={renderCustomizedLabel}
@@ -87,19 +89,21 @@ export default function ExpenseList({ expenses, categories }) {
 
     return (
         <div className={styles.expenseListContainer}>
-            <Calendar
-                onChange={(date) => setSelectedDate(date)}
-                value={selectedDate}
-            />
-            <h2>{selectedDate.toLocaleDateString()}の支出</h2>
-            <ul>
-                {filteredExpenses.map(expense => (
-                    <li key={expense.id}>
-                        {expense.amount}円 - {expense.selectedCategoryName}
-                    </li>
-                ))}
-            </ul>            
-            <div className="container mx-auto mt-4 p-4 bg-white rounded-lg shadow">
+            <div className={styles.calendarList}>
+                <Calendar
+                    onChange={(date) => setSelectedDate(date)}
+                    value={selectedDate}
+                />
+                <h2>{selectedDate.toLocaleDateString()}の支出</h2>
+                <ul>
+                    {filteredExpenses.map(expense => (
+                        <li key={expense.id}>
+                            {expense.amount}円 - {expense.selectedCategoryName}
+                        </li>
+                    ))}
+                </ul>
+            </div>         
+            <div className={styles.pieChart}>
                 {renderChart()}
             </div>
         </div>
