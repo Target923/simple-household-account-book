@@ -37,12 +37,16 @@ export default function ExpenseForm({ categories, setExpenses }) {
      * state更新時、UIが自動的に再描画
      */
     function saveExpenseInLocalStorage() {
+        const selectedCategoryObject = categories.find(cat => cat.id === expense.selectedCategory);
+        const categoryName = selectedCategoryObject ? selectedCategoryObject.name : '未分類';
+
         const newExpense = {
             id: Date.now().toString(),
             date: expense.date,
             amount: expense.amount,
             memo: expense.memo,
             selectedCategory: expense.selectedCategory,
+            selectedCategoryName: categoryName,
         };
 
         const existingExpenses = JSON.parse(localStorage.getItem('expenses')) || [];

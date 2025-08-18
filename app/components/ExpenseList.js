@@ -31,7 +31,7 @@ export default function ExpenseList({ expenses, categories }) {
             <ul>
                 {filteredExpenses.map(expense => (
                     <li key={expense.id}>
-                        {expense.amount}円 - {findCategoryName(expense.selectedCategory)}
+                        {expense.amount}円 - {expense.selectedCategoryName}
                     </li>
                 ))}
             </ul>

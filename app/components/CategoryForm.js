@@ -3,9 +3,8 @@ import { useState, useEffect } from 'react';
 
 import styles from './CategoryForm.module.css'
 
-export default function CategoryForm() {
+export default function CategoryForm({ categories, setCategories }) {
     const [categoryName, setCategoryName] = useState('');
-    const [categories, setCategories] = useState([]);
 
     /**
      * 入力フォームの値が変更されるたびに実行、categoryNameの状態を更新
