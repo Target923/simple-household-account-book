@@ -1,6 +1,8 @@
 .formContainer {
     display: flex;
     flex-direction: column;
+    gap: 10px;
+    margin: 0 10vw;
 }
 
 .inputSection {
@@ -10,7 +12,7 @@
     margin-bottom: 15px;
     margin-left: auto;
     margin-right: auto;
-    width: 50vw;
+    width: 100%;
     gap: 10px;
 
     background-color: aliceblue;
@@ -28,10 +30,11 @@
 }
 
 .inputSection input[type="text"] {
-    width: 100%;
+    width: 75%;
     font-size: 1.5rem;
-    text-align: center;
     padding: 10px;
+    margin-left: auto;
+    margin-right: auto;
     border: 2px solid silver;
     box-shadow: 0 0 5px rgba(0, 0, 0, 1);
 }
@@ -50,7 +53,7 @@
 .categoryList {
     display: flex;
     flex-direction: column;
-    width: 50%;
+    width: 100%;
     margin-left: auto;
     margin-right: auto;
     margin-bottom: 15px;

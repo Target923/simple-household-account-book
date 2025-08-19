@@ -1,5 +1,7 @@
 .formInput {
-    margin: 0 15%;
+    position: relative;
+
+    margin: 10px 10vw;
     padding: 10px 0;
     display: flex;
     flex-direction: column;
@@ -8,16 +10,18 @@
     border: 4px solid silver;
     border-radius: 8px;
     background-color: aliceblue;
-}
+    box-shadow: 0 4px 5px rgba(255, 255, 255, 0.5);
+ }
 
 .formContainer {
     border: 3px solid black;
     border-radius: 6px;
-    background-color: darkslategray;
+    background-color: darkolivegreen;
 
-    width: 50%;
+    width: 75%;
     margin-left: auto;
     margin-right: auto;
+    box-shadow: 0 4px 5px rgba(0, 0, 0, 0.5);
 }
 
 .formItem {
@@ -29,10 +33,12 @@
     margin-right: auto;
     max-width: 400px;
     padding: 5px;
+    gap: 2px;
 
     border: 4px solid silver;
     border-radius: 4px;
     background-color: whitesmoke;
+    box-shadow: 0 4px 5px rgba(0, 0, 0, 0.5);
     color: black;
     font-size: 1rem;
     font-weight: bold;
@@ -40,5 +46,6 @@
 }
 
 .formItem button {
-    
+    position: absolute;
+    top: 3000px;
 }
