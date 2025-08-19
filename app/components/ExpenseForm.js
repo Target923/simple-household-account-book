@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 import styles from './ExpenseForm.module.css'
 
@@ -9,7 +9,13 @@ export default function ExpenseForm({ categories, setExpenses }) {
         amount: '',
         memo: '',
         selectedCategory: '',
-    });
+    });        
+    
+    /**
+     * 金額の負の値防止
+     * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
+     */
+    const [amountError, setAmountError] = useState('');
 
     /**
      * 各入力項目の変更時、expenseの状態を更新
