@@ -26,6 +26,17 @@ export default function CategoryForm({ categories, setCategories }) {
     }
 
     /**
+     * カテゴリ削除関数
+     * @param {string} categoryId - 削除するID
+     */
+    function handleDelete(categoryId) {
+        const updateCategories = categories.filter(category => category.id !== categoryId);
+
+        setCategories(updateCategories);
+        localStorage.setItem('categories', JSON.stringify(updateCategories));
+    }
+
+    /**
      * 新しいカテゴリを生成し、ローカルストレージとstateの両方を更新
      * state更新時、UIが自動的に再描画
      */
@@ -40,6 +51,8 @@ export default function CategoryForm({ categories, setCategories }) {
         setCategories(updateCategories);
 
         localStorage.setItem('categories', JSON.stringify(updateCategories));
+
+        setCategoryName('')
     }
 
     return (
@@ -65,6 +78,7 @@ export default function CategoryForm({ categories, setCategories }) {
                             key={category.id}
                         >
                             {category.name}
+                            <button onClick={() => handleDelete(category.id)}>削除</button>
                         </li>
                     ))}
                 </ul>
