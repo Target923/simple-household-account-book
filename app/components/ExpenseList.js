@@ -1,3 +1,8 @@
+/**
+ * @file ExpenseList.js
+ * @description 月または日付毎の支出を表示、円グラフで集計するコンポーネント
+ */
+
 'use client';
 import { useState } from 'react';
 
@@ -8,9 +13,30 @@ import 'react-calendar/dist/Calendar.css';
 
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
+/**
+ * 支出とカテゴリーデータを基に、カレンダーと円グラフを表示するコンポーネント
+ * 日付を選択すると、その日の支出データを表示
+ * @param {object} props - コンポーネントプロパティ
+ * @param {Array<object>} props.expenses - 支出リスト
+ * @param {string} props.expenses.date - 支出の日付
+ * @param {string} props.expenses.amount - 支出金額
+ * @param {string} props.expenses.selectedCategoryName - カテゴリ名
+ * @param {Array<object>} props.categories - カテゴリーリスト
+ * @returns {JSX.Element} 支出リストのJSXエレメント
+ */
 export default function ExpenseList({ expenses, categories }) {
+
+    /**
+     * カレンダーで選択された日付を管理するstate
+     * 初期値は現在の日付
+     * @type {[Date, React.Dispatch<React.SetStateAction<Date>>]}
+     */
     const [selectedDate, setSelectedDate] = useState(new Date());
 
+    /**
+     * 選択された日付に一致する支出をフィルタリングしたリスト
+     * @type {Array<object>}
+     */
     const filteredExpenses = expenses.filter(expense => {
         const expenseDate = new Date(expense.date);
         return expenseDate.getFullYear() === selectedDate.getFullYear() &&
@@ -18,6 +44,10 @@ export default function ExpenseList({ expenses, categories }) {
                 expenseDate.getDate() === selectedDate.getDate();
     });
 
+    /**
+     * カテゴリ毎の金額の集計データ(グラフ表示用)
+     * @type {Array<{name: string, value: number}>}
+     */
     const aggregatedData = filteredExpenses.reduce((acc, expense) => {
         const existingCategory = acc.find(item => item.name === expense.selectedCategoryName);
 
@@ -33,8 +63,18 @@ export default function ExpenseList({ expenses, categories }) {
         return acc;
     }, []);
 
+    /**
+     * 円グラフの色設定用配列
+     * @constant
+     * @type {Array<string>}
+     */
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF19A0', '#19FFD1'];
 
+    /**
+     * 円グラフのラベルをカスタマイズする関数
+     * @param {object} props - Rechartsが提供するプロパティ(中心座標、半径、割合、etc...)
+     * @returns {JSX.Element|null} SVGの<text>要素またはnull
+     */
     const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
         const RADIAN = Math.PI / 180;
         const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
@@ -54,6 +94,10 @@ export default function ExpenseList({ expenses, categories }) {
         );
     };
 
+    /**
+     * 円グラフ描画関数
+     * @returns {JSX.Element} 円グラフまたはメッセージ
+     */
     const renderChart = () => {
         const totalAmount = filteredExpenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
         if (totalAmount === 0) {
