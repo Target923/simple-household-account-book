@@ -5,7 +5,7 @@ import styles from './ExpenseForm.module.css'
 
 export default function ExpenseForm({ categories, setExpenses }) {
     const [expense, setExpense] = useState({
-        date: '',
+        date: new Date(),
         amount: '',
         memo: '',
         selectedCategory: '',
@@ -17,6 +17,17 @@ export default function ExpenseForm({ categories, setExpenses }) {
      */
     function handleChange(event) {
         const { name, value } = event.target;
+
+        setAmountError('');
+
+        if (name === 'amount') {
+            const amountValue = Number(value);
+            if (amountValue < 0) {
+                setAmountError('金額には0以上を入力してください')
+                return;
+            }
+        }
+
         setExpense(prevExpense => ({
             ...prevExpense,
             [name]: value,
@@ -56,7 +67,7 @@ export default function ExpenseForm({ categories, setExpenses }) {
         localStorage.setItem('expenses', JSON.stringify(updateExpenses));
 
         setExpense({
-            date: '',
+            date: new Date(),
             amount: '',
             memo: '',
             selectedCategory: '',
@@ -75,17 +86,21 @@ export default function ExpenseForm({ categories, setExpenses }) {
                         value={expense.date}
                         onChange={handleChange}
                         // value={date.now()}
-                    ></input>
+                    />
                 </li>
                 <li className={styles.formItem}>
-                    <label htmlFor='amount'>使用額</label>
+                    <label htmlFor='amount'>金額</label>
                     <input
                         type="number"
                         id="amount"
                         name='amount'
                         value={expense.amount}
                         onChange={handleChange}
-                    ></input>
+                    />
+                    {amountError && (
+                        <p style={{ color: 'red' }}>{amountError}</p>
+                    )}
+                    
                 </li>
                 <li className={styles.formItem}>
                     <label htmlFor='memo'>メモ</label>
@@ -95,7 +110,7 @@ export default function ExpenseForm({ categories, setExpenses }) {
                         name='memo'
                         value={expense.memo}
                         onChange={handleChange}
-                    ></input>
+                    />
                 </li>
                 <li className={styles.formItem}>
                     <label htmlFor='selectedCategory'>カテゴリー</label>
