@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 
 import styles from './ExpenseForm.module.css'
+// import { notFound } from 'next/navigation';
 
 export default function ExpenseForm({ categories, setExpenses }) {
     const [expense, setExpense] = useState({
@@ -12,40 +13,76 @@ export default function ExpenseForm({ categories, setExpenses }) {
     });        
     
     /**
-     * 金額の負の値防止
+     * エラー用メッセージ管理state
      * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
      */
-    const [amountError, setAmountError] = useState('');
+    const [errors, setErrors] = useState({
+        amount: '',
+        selectedCategory: '',
+    });
 
     /**
+     * 警告用メッセージ管理state
+     * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+     */
+    const [warnings, setWarnings] = useState({
+        amountZero: false,
+    });
+    
+    /**
      * 各入力項目の変更時、expenseの状態を更新
-     * @param {ChangeEvent<HTMLElement>} event - プルダウンの変更イベント
+     * @param {React.ChangeEvent<HTMLInputElement | HTMLSelectElement>} event - 入力/選択イベント
      */
     function handleChange(event) {
         const { name, value } = event.target;
 
-        setAmountError('');
-
-        if (name === 'amount') {
-            const amountValue = Number(value);
-            if (amountValue < 0) {
-                setAmountError('金額には0以上を入力してください')
-                return;
-            }
-        }
+        setErrors(prevErrors => ({
+            ...prevErrors,
+            [name]: '',
+        }));
+        setWarnings(prevWarnings => ({
+            ...prevWarnings,
+            amountZero: false,
+        }));
 
         setExpense(prevExpense => ({
             ...prevExpense,
-            [name]: value,
+            [name]: name === 'date' ? new Date(value) : value,
         }));
     }
 
     /**
-     * 東特ボタンクリック時に実行、支出内容を保存
-     * @param {MouseEvent<HTMLButtonElement>} event - Button要素の変更イベント
+     * 登録ボタンクリック時に実行、支出内容を保存
+     * @param {MouseEvent<HTMLButtonElement>} event - ボタンクリックイベント
      */
     function handleClick(event) {
         event.preventDefault();
+
+        const newErrors = { amount: '', selectedCategory: '' };
+        const newWarnings = { amountZero: false };
+
+        if (Number(expense.amount) < 0) {
+            newErrors.amount = '金額には0以上を入力してください';
+        } else if (expense.amount === '') {
+            newErrors.amount = '金額を入力してください';
+        }
+        if (!expense.selectedCategory) {
+            newErrors.selectedCategory = 'カテゴリーを選択してください';
+        }
+
+        if (Object.values(newErrors).some(error => error !== '')) {
+            setErrors(newErrors);
+            return;
+        }
+
+        if (Number(expense.amount) === 0) {
+            newWarnings.amountZero = true;
+        }
+        if (Object.values(newWarnings).some(warning => warning)) {
+            setWarnings(newWarnings);
+            return;
+        }
+
         saveExpenseInLocalStorage();
     }
 
@@ -77,8 +114,18 @@ export default function ExpenseForm({ categories, setExpenses }) {
             amount: '',
             memo: '',
             selectedCategory: '',
-        })
-    }
+        });
+
+        setErrors({ amount: '', selectedCategory: '', });
+        setWarnings({ amountZero: false });
+    };
+
+    const handleConfirmSave = () => {
+        saveExpenseInLocalStorage();
+    };
+    const handleCancelSave = () => {
+        setWarnings({ amountZero: false });
+    };
 
     return (
         <div className={styles.formInput}>
@@ -89,9 +136,8 @@ export default function ExpenseForm({ categories, setExpenses }) {
                         type="date"
                         id='date'
                         name='date'
-                        value={expense.date}
+                        value={expense.date.toISOString().substring(0, 10)}
                         onChange={handleChange}
-                        // value={date.now()}
                     />
                 </li>
                 <li className={styles.formItem}>
@@ -103,10 +149,9 @@ export default function ExpenseForm({ categories, setExpenses }) {
                         value={expense.amount}
                         onChange={handleChange}
                     />
-                    {amountError && (
-                        <p style={{ color: 'red' }}>{amountError}</p>
+                    {errors.amount && (
+                        <p style={{ color: 'red' }}>{errors.amount}</p>
                     )}
-                    
                 </li>
                 <li className={styles.formItem}>
                     <label htmlFor='memo'>メモ</label>
@@ -134,9 +179,23 @@ export default function ExpenseForm({ categories, setExpenses }) {
                         </option>
                         ))}
                     </select>
+                    {errors.selectedCategory && (
+                        <p style={{ color: 'red' }}>{errors.selectedCategory}</p>
+                    )}
                 </li>
             </ul>
-            <button className={styles.formItem} onClick={handleClick}>この内容で登録する</button>
+            <div>
+                <button className={styles.formItem} onClick={handleClick}>この内容で登録する</button>
+                {warnings.amountZero && (
+                    <div className={styles.formContainer}>
+                        <p>金額0円で登録しますか？</p>
+                        <div>
+                            <button className={styles.formItem} onClick={handleConfirmSave}>はい</button>
+                            <button className={styles.formItem} onClick={handleCancelSave}>いいえ</button>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     )
-}
+};
