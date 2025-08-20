@@ -25,13 +25,24 @@ export default function Home() {
     }
   }, []);
 
+  function handleDeleteExpense(expenseId) {
+    const updateExpenses = expenses.filter(expense => expense !== expenseId);
+
+    setExpenses(updateExpenses);
+    localStorage.setItem('expenses', JSON.stringify(updateExpenses));
+  }
+
   return (
     <main>
       <h1>理想の家計簿</h1>
       <hr />
       <CategoryForm categories={categories} setCategories={setCategories} />
       <ExpenseForm categories={categories} setExpenses={setExpenses} />
-      <ExpenseList expenses={expenses} categories={categories} />
+      <ExpenseList
+        expenses={expenses}
+        categories={categories}
+        onDeleteExpense={handleDeleteExpense}
+      />
     </main>
   )
 }

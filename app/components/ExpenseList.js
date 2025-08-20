@@ -13,6 +13,8 @@ import 'react-calendar/dist/Calendar.css';
 
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
+import { FaTrash } from 'react-icons/fa';
+
 /**
  * 支出とカテゴリーデータを基に、カレンダーと円グラフを表示するコンポーネント
  * 日付を選択すると、その日の支出データを表示
@@ -22,9 +24,12 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
  * @param {string} props.expenses.amount - 支出金額
  * @param {string} props.expenses.selectedCategoryName - カテゴリ名
  * @param {Array<object>} props.categories - カテゴリーリスト
+ * @param {function name(params)} props.onDeleteExpense - 支出リスト削除関数
+    
+ }}
  * @returns {JSX.Element} 支出リストのJSXエレメント
  */
-export default function ExpenseList({ expenses, categories }) {
+export default function ExpenseList({ expenses, categories, onDeleteExpense }) {
 
     /**
      * カレンダーで選択された日付を管理するstate
@@ -143,6 +148,7 @@ export default function ExpenseList({ expenses, categories }) {
                     {filteredExpenses.map(expense => (
                         <li key={expense.id}>
                             {expense.amount}円 - {expense.selectedCategoryName}
+                            <FaTrash onClick={() => onDeleteExpense(expense.id)}/> 削除
                         </li>
                     ))}
                 </ul>
