@@ -144,11 +144,15 @@ export default function ExpenseList({ expenses, categories, onDeleteExpense }) {
                     value={selectedDate}
                 />
                 <h2>{selectedDate.toLocaleDateString()}の支出</h2>
-                <ul>
+                <ul className={styles.expensesList}>
                     {filteredExpenses.map(expense => (
-                        <li key={expense.id}>
-                            {expense.amount}円 - {expense.selectedCategoryName}
-                            <FaTrash onClick={() => onDeleteExpense(expense.id)}/> 削除
+                        <li className={styles.expenseItems} key={expense.id}>
+                            <div>
+                                {expense.amount}円 - {expense.selectedCategoryName}
+                            </div>
+                            <div>
+                                <FaTrash onClick={() => onDeleteExpense(expense.id)}/> 削除
+                            </div>
                         </li>
                     ))}
                 </ul>

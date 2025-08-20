@@ -10,11 +10,34 @@
 
 .calendarList {
     flex-basis: 40%;
-    border: 1px solid azure;
+    border: 4px solid silver;
     padding: 10px;
+}
+
+.expensesList {
+    border: 3px solid yellowgreen;
+    border-radius: 4px;
+    padding: 15px 10px;
+    list-style-type: none;
+
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.expenseItems {
+    display: flex;
+    flex-direction: row;
+    padding: 2px 5px;
+    justify-content: space-between;
+
+    font-size: 1.2rem;
+
+    border: 2px solid lightgreen;
+    border-radius: 15px;
 }
 
 .pieChart {
     flex-grow: 1;
-    border: 1px solid azure;
+    border: 4px solid silver;
 }
