@@ -23,13 +23,13 @@
 .inputSection label {
     /* color: black; */
     font-weight: bold;
-    font-size: 1.5rem;
+    font-size: 1.5em;
     text-align: center;
 }
 
 .inputSection input[type="text"] {
     width: 75%;
-    font-size: 1.5rem;
+    font-size: 1.5em;
     text-align: center;
     padding: 10px;
     margin-left: auto;
@@ -40,7 +40,7 @@
 
 .inputSection button {
     width: 50%;
-    font-size: 1rem;
+    font-size: 1em;
     padding: 5px;
     margin-left: auto;
     margin-right: auto;
@@ -56,7 +56,7 @@
     margin-left: auto;
     margin-right: auto;
     margin-bottom: 15px;
-    font-size: 1rem;
+    font-size: 1em;
     text-align: center;
     padding: 25px;
     gap: 10px;

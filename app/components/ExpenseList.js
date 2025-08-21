@@ -4,7 +4,7 @@
  */
 
 'use client';
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, memo } from 'react';
 
 import styles from './ExpenseList.module.css';
 
@@ -193,14 +193,18 @@ export default function ExpenseList({ expenses, setExpenses, categories }) {
                     <ul className={styles.expensesList}>
                         {filteredExpenses.map(expense => (
                             <li className={styles.expenseItems} key={expense.id}>
-                                <div>
-                                    {expense.amount}円 - {expense.selectedCategoryName}
+                                <div className={styles.categoryAndMemo}>
+                                    <div>{expense.selectedCategoryName}&nbsp;</div>
+                                    <div className={styles.memo}>{expense.memo}</div>
                                 </div>
-                                <div
-                                    className={styles.deleteIcon}
-                                    onClick={() => handleDeleteExpense(expense.id)}
-                                >
-                                    <FaTrash /> 削除
+                                <div className={styles.amountAndDelete}>
+                                    <div>{expense.amount}円&nbsp;</div>
+                                    <div
+                                        className={styles.deleteIcon}
+                                        onClick={() => handleDeleteExpense(expense.id)}
+                                    >
+                                        <FaTrash /> 削除
+                                    </div>
                                 </div>
                             </li>
                         ))}
