@@ -4,7 +4,7 @@
  */
 
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 import styles from './ExpenseList.module.css';
 
@@ -29,7 +29,7 @@ import { FaTrash } from 'react-icons/fa';
  }}
  * @returns {JSX.Element} 支出リストのJSXエレメント
  */
-export default function ExpenseList({ expenses, categories, setExpenses }) {
+export default function ExpenseList({ expenses, setExpenses, categories }) {
 
     /**
      * カレンダーで選択された日付を管理するstate
@@ -40,33 +40,39 @@ export default function ExpenseList({ expenses, categories, setExpenses }) {
 
     /**
      * 選択された日付に一致する支出をフィルタリングしたリスト
+     * expenses/selectedDate変更時、再計算
      * @type {Array<object>}
      */
-    const filteredExpenses = expenses.filter(expense => {
-        const expenseDate = new Date(expense.date);
-        return expenseDate.getFullYear() === selectedDate.getFullYear() &&
-                expenseDate.getMonth() === selectedDate.getMonth() &&
-                expenseDate.getDate() === selectedDate.getDate();
-    });
+    const filteredExpenses = useMemo(() => {
+        return expenses.filter(expense => {
+                const expenseDate = new Date(expense.date);
+                return expenseDate.getFullYear() === selectedDate.getFullYear() &&
+                        expenseDate.getMonth() === selectedDate.getMonth() &&
+                        expenseDate.getDate() === selectedDate.getDate();
+        });
+    }, [expenses, selectedDate]);
 
     /**
      * カテゴリ毎の金額の集計データ(グラフ表示用)
+     * filteredExpenses変更時、再計算
      * @type {Array<{name: string, value: number}>}
      */
-    const aggregatedData = filteredExpenses.reduce((acc, expense) => {
-        const existingCategory = acc.find(item => item.name === expense.selectedCategoryName);
+    const aggregatedData = useMemo(() => {
+        return filteredExpenses.reduce((acc, expense) => {
+            const existingCategory = acc.find(item => item.name === expense.selectedCategoryName);
 
-        if (existingCategory) {
-            existingCategory.value += Number(expense.amount);
-        } else {
-            acc.push({
-                name: expense.selectedCategoryName,
-                value: Number(expense.amount)
-            });
-        }
+            if (existingCategory) {
+                existingCategory.value += Number(expense.amount);
+            } else {
+                acc.push({
+                    name: expense.selectedCategoryName,
+                    value: Number(expense.amount)
+                });
+            }
 
-        return acc;
-    }, []);
+            return acc;
+        }, []);
+    }, [filteredExpenses]);
 
     /**
      * 円グラフの色設定用配列
@@ -87,6 +93,8 @@ export default function ExpenseList({ expenses, categories, setExpenses }) {
         const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
         const data = aggregatedData[index];
+        if (!data) return null;
+
         const percentage = (percent * 100).toFixed(0);
 
         if (percentage === '0') return null;
@@ -106,7 +114,10 @@ export default function ExpenseList({ expenses, categories, setExpenses }) {
     const renderChart = () => {
         const totalAmount = filteredExpenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
         if (totalAmount === 0) {
-            return <p className="text-center text-gray-500">データがありません</p>
+            return <h1>No Data</h1>;
+        }
+        if (filteredExpenses.length === 0) {
+            return <h1>No Data</h1>;
         }
 
         const filteredData = aggregatedData.filter(d => d.value > 0);
@@ -126,7 +137,7 @@ export default function ExpenseList({ expenses, categories, setExpenses }) {
                         label={renderCustomizedLabel}
                     >
                         {
-                            aggregatedData.map((entry, index) => (
+                            filteredData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))
                         }
@@ -138,7 +149,7 @@ export default function ExpenseList({ expenses, categories, setExpenses }) {
 
     /**
      * 支出削除関数()
-     * @param {string} expenseId - 削除IDID
+     * @param {string} expenseId - 削除ID
      */
     function handleDeleteExpense(expenseId) {
         const updateExpenses = expenses.filter(expense => expense.id !== expenseId);
@@ -160,7 +171,10 @@ export default function ExpenseList({ expenses, categories, setExpenses }) {
                             <div>
                                 {expense.amount}円 - {expense.selectedCategoryName}
                             </div>
-                            <div onClick={() => handleDeleteExpense(expense.id)}>
+                            <div
+                                className={styles.deleteIcon}
+                                onClick={() => handleDeleteExpense(expense.id)}
+                            >
                                 <FaTrash /> 削除
                             </div>
                         </li>
