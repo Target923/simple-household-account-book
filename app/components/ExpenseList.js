@@ -29,7 +29,7 @@ import { FaTrash } from 'react-icons/fa';
  }}
  * @returns {JSX.Element} 支出リストのJSXエレメント
  */
-export default function ExpenseList({ expenses, categories, onDeleteExpense }) {
+export default function ExpenseList({ expenses, categories, setExpenses }) {
 
     /**
      * カレンダーで選択された日付を管理するstate
@@ -136,6 +136,16 @@ export default function ExpenseList({ expenses, categories, onDeleteExpense }) {
         );
     };
 
+    /**
+     * 支出削除関数()
+     * @param {string} expenseId - 削除IDID
+     */
+    function handleDeleteExpense(expenseId) {
+        const updateExpenses = expenses.filter(expense => expense.id !== expenseId);
+        setExpenses(updateExpenses);
+        localStorage.setItem('expenses', JSON.stringify(updateExpenses));
+    }
+
     return (
         <div className={styles.expenseListContainer}>
             <div className={styles.calendarList}>
@@ -150,8 +160,8 @@ export default function ExpenseList({ expenses, categories, onDeleteExpense }) {
                             <div>
                                 {expense.amount}円 - {expense.selectedCategoryName}
                             </div>
-                            <div>
-                                <FaTrash onClick={() => onDeleteExpense(expense.id)}/> 削除
+                            <div onClick={() => handleDeleteExpense(expense.id)}>
+                                <FaTrash /> 削除
                             </div>
                         </li>
                     ))}

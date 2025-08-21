@@ -31,7 +31,6 @@ export default function CategoryForm({ categories, setCategories }) {
      */
     function handleDelete(categoryId) {
         const updateCategories = categories.filter(category => category.id !== categoryId);
-
         setCategories(updateCategories);
         localStorage.setItem('categories', JSON.stringify(updateCategories));
     }
