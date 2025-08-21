@@ -4,7 +4,7 @@
  */
 
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 
 import styles from './ExpenseList.module.css';
 
@@ -107,31 +107,55 @@ export default function ExpenseList({ expenses, setExpenses, categories }) {
         );
     };
 
+    const pieChartRef = useRef(null);
+    const [pieChartSize, setPieChartSize] = useState({ width: 0, height: 0 });
+
+    useEffect(() => {
+        const handleResize = () => {
+            if (pieChartRef.current) {
+                setPieChartSize({
+                    width: pieChartRef.current.clientWidth,
+                    height: pieChartRef.current.clientHeight,
+                });
+            }
+        };
+
+        handleResize();
+
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
     /**
      * 円グラフ描画関数
      * @returns {JSX.Element} 円グラフまたはメッセージ
      */
     const renderChart = () => {
-        const totalAmount = filteredExpenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
-        if (totalAmount === 0) {
-            return <h1>No Data</h1>;
-        }
         if (filteredExpenses.length === 0) {
             return <h1>No Data</h1>;
         }
 
         const filteredData = aggregatedData.filter(d => d.value > 0);
+        const { width, height } = pieChartSize;
+
+        if (width === 0 || height === 0) {
+            return null;
+        }
+        const outerRadius = Math.min(width, height) / 2 - 25;
 
         return (
             <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
+                <PieChart width={300} height={300}>
                     <Pie
                         data={filteredData}
                         dataKey="value"
                         nameKey="name"
                         cx="50%"
                         cy="50%"
-                        outerRadius={300}
+                        outerRadius={outerRadius}
                         fill="#8884d8"
                         labelLine={false}
                         label={renderCustomizedLabel}
@@ -165,25 +189,27 @@ export default function ExpenseList({ expenses, setExpenses, categories }) {
                     value={selectedDate}
                 />
                 <h2>{selectedDate.toLocaleDateString()}の支出</h2>
-                <ul className={styles.expensesList}>
-                    {filteredExpenses.map(expense => (
-                        <li className={styles.expenseItems} key={expense.id}>
-                            <div>
-                                {expense.amount}円 - {expense.selectedCategoryName}
-                            </div>
-                            <div
-                                className={styles.deleteIcon}
-                                onClick={() => handleDeleteExpense(expense.id)}
-                            >
-                                <FaTrash /> 削除
-                            </div>
-                        </li>
-                    ))}
-                </ul>
+                {filteredExpenses.length > 0 && (
+                    <ul className={styles.expensesList}>
+                        {filteredExpenses.map(expense => (
+                            <li className={styles.expenseItems} key={expense.id}>
+                                <div>
+                                    {expense.amount}円 - {expense.selectedCategoryName}
+                                </div>
+                                <div
+                                    className={styles.deleteIcon}
+                                    onClick={() => handleDeleteExpense(expense.id)}
+                                >
+                                    <FaTrash /> 削除
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                )}
             </div>         
-            <div className={styles.pieChart}>
+            <div ref={pieChartRef} className={styles.pieChart}>
                 {renderChart()}
             </div>
         </div>
-    )
+    );
 }
