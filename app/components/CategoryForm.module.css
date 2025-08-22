@@ -92,6 +92,10 @@
     width: 100%;
     font-size: 1.5em;;
 }
+.selected {
+    background-color: lime;
+    color: black;
+}
 
 .categoryName {
     flex-grow: 1;

@@ -44,18 +44,30 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
      * @param {string} categoryName - 選択中カテゴリ
      */
     function handleDelete(categoryId, categoryName) {
-        const updateCategories = categories.filter(category => category.id !== categoryId);
+        const updateCategories = categories.filter(cat => cat.id !== categoryId);
         setCategories(updateCategories);
         localStorage.setItem('categories', JSON.stringify(updateCategories));
-        
-        if (expenseData.selectedCategory === categoryName)
-        {
-            setExpenseData(prevExpenseData => ({
-                ...prevExpenseData,
-                selectedCategory: '',
-            }));
-        }
+    
+        // if (expenseData.selectedCategory === categoryName)
+        // {
+        //     setExpenseData(prevExpenseData => ({
+        //         ...prevExpenseData,
+        //         selectedCategory: '',
+        //     }));
+        // }
     }
+    useEffect(() => {
+        if (categories.length > 0) {
+            const isFound = categories.some(cat => cat.name === expenseData.selectedCategory);
+
+            if (!isFound) {
+                setExpenseData(prevExpenseData => ({
+                    ...prevExpenseData,
+                    selectedCategory: '',
+                }));
+            }
+        }
+    }, [categories, expenseData.selectedCategory, setExpenseData]);
 
     /**
      * 新しいカテゴリを生成し、ローカルストレージとstateの両方を更新
@@ -88,18 +100,23 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
                 ></input>
                 <button 
                     onClick={handleClickRegister}
-                >この名前で登録する</button>
+                >
+                    この名前で登録する</button>
             </div>
             <div className={styles.categoryList}>
                 <h2>カテゴリ一覧</h2>
                 <ul className={styles.categories}>
                     {categories.map((category) => (
                         <li
-                            className={styles.category}
+                            className={
+                                `${styles.category}
+                                ${expenseData.selectedCategory === category.name ? styles.selected : ''}`
+                            }
                             onClick={() => handleClickCategory(category.name)}
                             key={category.id}
                         >
-                            <div className={styles.categoryName}>{category.name}</div>
+                            <div className={styles.categoryName}>
+                                {category.name}</div>
                             <IoTrashBin
                                 className={styles.trashIcon}
                                 onClick={() => handleDelete(category.id, category.name)} />

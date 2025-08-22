@@ -156,18 +156,11 @@ export default function ExpenseForm({ categories, setExpenses, expenseData, setE
                         onChange={handleChange}
                     />
                 </li>
-                <li className={styles.formItem}>
-                    <label htmlFor='selectedCategory'>カテゴリー</label>
-                    <tspan
-                        id='selectedCategory'
-                        name='selectedCategory'
-                    >
-                        {expenseData.selectedCategory}
-                    </tspan>
-                    {errors.selectedCategory && (
+                {errors.selectedCategory && (
+                    <li className={styles.formItem}>
                         <p style={{ color: 'red' }}>{errors.selectedCategory}</p>
-                    )}
-                </li>
+                    </li>
+                )}
             </ul>
             <div>
                 <button className={styles.formItem} onClick={handleClick}>この内容で登録する</button>
