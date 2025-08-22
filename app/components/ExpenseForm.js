@@ -96,11 +96,11 @@ export default function ExpenseForm({ categories, setExpenses, expenseData, setE
             selectedCategoryName: categoryName,
         };
 
-        const existingExpenses = JSON.parse(localStorage.getItem('expenseData')) || [];
+        const existingExpenses = JSON.parse(localStorage.getItem('expenses')) || [];
         const updateExpenses = [...existingExpenses, newExpense];
         setExpenses(updateExpenses);
 
-        localStorage.setItem('expenseData', JSON.stringify(updateExpenses));
+        localStorage.setItem('expenses', JSON.stringify(updateExpenses));
 
         setExpenseData({
             date: new Date(),

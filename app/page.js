@@ -59,9 +59,6 @@ export default function Home() {
       date: new Date(expense.date),
     }));
     setExpenses(parsedExpenses);
-
-    const storedExpenseData = JSON.parse(localStorage.getItem('expenseData')) || [];
-    localStorage.setItem('expenseData', JSON.stringify(storedExpenseData));
   }, []);
 
  return (

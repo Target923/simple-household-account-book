@@ -4,7 +4,7 @@
  */
 
 'use client';
-import { useState, useMemo, useRef, useEffect, memo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 
 import styles from './ExpenseList.module.css';
 
