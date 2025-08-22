@@ -44,8 +44,8 @@ export default function ExpenseList({ expenses, setExpenses, categories }) {
      * @type {Array<object>}
      */
     const filteredExpenses = useMemo(() => {
-        return expenses.filter(expense => {
-                const expenseDate = new Date(expense.date);
+        return expenses.filter(expenseData => {
+                const expenseDate = new Date(expenseData.date);
                 return expenseDate.getFullYear() === selectedDate.getFullYear() &&
                         expenseDate.getMonth() === selectedDate.getMonth() &&
                         expenseDate.getDate() === selectedDate.getDate();
@@ -58,15 +58,15 @@ export default function ExpenseList({ expenses, setExpenses, categories }) {
      * @type {Array<{name: string, value: number}>}
      */
     const aggregatedData = useMemo(() => {
-        return filteredExpenses.reduce((acc, expense) => {
-            const existingCategory = acc.find(item => item.name === expense.selectedCategoryName);
+        return filteredExpenses.reduce((acc, expenseData) => {
+            const existingCategory = acc.find(item => item.name === expenseData.selectedCategoryName);
 
             if (existingCategory) {
-                existingCategory.value += Number(expense.amount);
+                existingCategory.value += Number(expenseData.amount);
             } else {
                 acc.push({
-                    name: expense.selectedCategoryName,
-                    value: Number(expense.amount)
+                    name: expenseData.selectedCategoryName,
+                    value: Number(expenseData.amount)
                 });
             }
 
@@ -175,10 +175,10 @@ export default function ExpenseList({ expenses, setExpenses, categories }) {
      * 支出削除関数()
      * @param {string} expenseId - 削除ID
      */
-    function handleDeleteExpense(expenseId) {
-        const updateExpenses = expenses.filter(expense => expense.id !== expenseId);
+    function handleDeleteExpense(expenseDataId) {
+        const updateExpenses = expenses.filter(expenseData => expenseData.id !== expenseDataId);
         setExpenses(updateExpenses);
-        localStorage.setItem('expenses', JSON.stringify(updateExpenses));
+        localStorage.setItem('expenseData', JSON.stringify(updateExpenses));
     }
 
     return (
@@ -191,17 +191,17 @@ export default function ExpenseList({ expenses, setExpenses, categories }) {
                 <h2>{selectedDate.toLocaleDateString()}の支出</h2>
                 {filteredExpenses.length > 0 && (
                     <ul className={styles.expensesList}>
-                        {filteredExpenses.map(expense => (
-                            <li className={styles.expenseItems} key={expense.id}>
+                        {filteredExpenses.map(expenseData => (
+                            <li className={styles.expenseItems} key={expenseData.id}>
                                 <div className={styles.categoryAndMemo}>
-                                    <div>{expense.selectedCategoryName}&nbsp;</div>
-                                    <div className={styles.memo}>{expense.memo}</div>
+                                    <div>{expenseData.selectedCategoryName}&nbsp;</div>
+                                    <div className={styles.memo}>{expenseData.memo}</div>
                                 </div>
                                 <div className={styles.amountAndDelete}>
-                                    <div>{expense.amount}円&nbsp;</div>
+                                    <div>{expenseData.amount}円&nbsp;</div>
                                     <div
                                         className={styles.deleteIcon}
-                                        onClick={() => handleDeleteExpense(expense.id)}
+                                        onClick={() => handleDeleteExpense(expenseData.id)}
                                     >
                                         <FaTrash /> 削除
                                     </div>

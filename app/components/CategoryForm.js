@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 
 import styles from './CategoryForm.module.css'
 
-export default function CategoryForm({ categories, setCategories }) {
+export default function CategoryForm({ categories, setCategories, expenseData, setExpenseData }) {
     const [categoryName, setCategoryName] = useState('');
 
     /**
@@ -18,7 +18,7 @@ export default function CategoryForm({ categories, setCategories }) {
      * 登録ボタンクリック時に実行、新規カテゴリを保存
      * @param {MouseEvent<HTMLButtonElement>} event - Button要素の変更イベント 
      */
-    function handleClick(event) {
+    function handleClickRegister(event) {
         event.preventDefault();
         if (categoryName) {
             saveCategoryInLocalStorage();
@@ -26,13 +26,33 @@ export default function CategoryForm({ categories, setCategories }) {
     }
 
     /**
-     * カテゴリ削除関数
-     * @param {string} categoryId - 削除するID
+     * カテゴリボタンクリック時に実行、支出データの選択カテゴリー項目に保存
+     * @param {string} categoryName - 選択中カテゴリ
      */
-    function handleDelete(categoryId) {
+    function handleClickCategory(categoryName) {
+        setExpenseData(prevExpenseData => ({
+            ...prevExpenseData,
+            selectedCategory: categoryName,
+        }));
+    }
+
+    /**
+     * カテゴリ削除関数(選択中カテゴリもリセット)
+     * @param {string} categoryId - 削除するID
+     * @param {string} categoryName - 選択中カテゴリ
+     */
+    function handleDelete(categoryId, categoryName) {
         const updateCategories = categories.filter(category => category.id !== categoryId);
         setCategories(updateCategories);
         localStorage.setItem('categories', JSON.stringify(updateCategories));
+        
+        if (expenseData.selectedCategory === categoryName)
+        {
+            setExpenseData(prevExpenseData => ({
+                ...prevExpenseData,
+                selectedCategory: '',
+            }));
+        }
     }
 
     /**
@@ -65,7 +85,7 @@ export default function CategoryForm({ categories, setCategories }) {
                     onChange={handleChange}
                 ></input>
                 <button 
-                    onClick={handleClick}
+                    onClick={handleClickRegister}
                 >この名前で登録する</button>
             </div>
             <div className={styles.categoryList}>
@@ -76,8 +96,8 @@ export default function CategoryForm({ categories, setCategories }) {
                             className={styles.categoryName}
                             key={category.id}
                         >
-                            {category.name}
-                            <button onClick={() => handleDelete(category.id)}>削除</button>
+                            <button onClick={() => handleClickCategory(category.name)}>{category.name}</button>
+                            <button onClick={() => handleDelete(category.id, category.name)}>削除</button>
                         </li>
                     ))}
                 </ul>

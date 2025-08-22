@@ -14,16 +14,27 @@ import { useState, useEffect } from "react";
  */
 export default function Home() {
   /**
-   * 支出管理state
+   * カテゴリー管理state
    * @type {[Array<object>, React.Dispatch<React.SetStateAction<Array<object>>>]}
    */
   const [categories, setCategories] = useState([]);
 
   /**
-   * カテゴリー管理state
+   * 支出管理state
    * @type {[Array<object>, React.Dispatch<React.SetStateAction<Array<object>>>]}
    */
   const [expenses, setExpenses] = useState([]);
+
+  /**
+   * 支出データ管理state
+   * @type {[Array<object>, React.Dispatch<React.SetStateAction<Array<object>>>]}
+   */
+  const [expenseData, setExpenseData] = useState({
+    date: new Date(),
+    amount: '',
+    memo: '',
+    selectedCategory: '',
+  });
 
   /**
    * コンポーネントマウント時、ローカルストレージからデータ読み込み
@@ -38,7 +49,7 @@ export default function Home() {
             { id: (Date.now() + 1).toString(), name: '交通費' },
         ];
         setCategories(initialCategories);
-        localStorage.setItem('categories', JSON.stringify(initialCategories))
+        localStorage.setItem('categories', JSON.stringify(initialCategories));
     }
 
     const storedExpenses = JSON.parse(localStorage.getItem('expenses')) || [];
@@ -47,19 +58,25 @@ export default function Home() {
       date: new Date(expense.date),
     }));
     setExpenses(parsedExpenses);
+
+    const storedExpenseData = JSON.parse(localStorage.getItem('expenseData')) || [];
+    localStorage.setItem('expenseData', JSON.stringify(storedExpenseData));
   }, []);
 
  return (
     <main>
       <h1>理想の家計簿</h1>
       <hr />
-      <CategoryForm categories={categories} setCategories={setCategories} />
-      <ExpenseForm categories={categories} setExpenses={setExpenses} />
+      <CategoryForm
+        categories={categories} setCategories={setCategories} 
+        expenseData={expenseData} setExpenseData={setExpenseData}/>
+      <ExpenseForm 
+        categories={categories} setExpenses={setExpenses}
+        expenseData={expenseData} setExpenseData={setExpenseData}/>
       <ExpenseList
         expenses={expenses}
         setExpenses={setExpenses}
-        categories={categories}
-      />
+        categories={categories}/>
     </main>
   )
 }

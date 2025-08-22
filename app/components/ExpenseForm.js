@@ -4,14 +4,7 @@ import React, { useState } from 'react';
 import styles from './ExpenseForm.module.css'
 // import { notFound } from 'next/navigation';
 
-export default function ExpenseForm({ categories, setExpenses }) {
-    const [expense, setExpense] = useState({
-        date: new Date(),
-        amount: '',
-        memo: '',
-        selectedCategory: '',
-    });        
-    
+export default function ExpenseForm({ categories, setExpenses, expenseData, setExpenseData }) {   
     /**
      * エラー用メッセージ管理state
      * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
@@ -30,7 +23,7 @@ export default function ExpenseForm({ categories, setExpenses }) {
     });
     
     /**
-     * 各入力項目の変更時、expenseの状態を更新
+     * 各入力項目の変更時、expenseDataの状態を更新
      * @param {React.ChangeEvent<HTMLInputElement | HTMLSelectElement>} event - 入力/選択イベント
      */
     function handleChange(event) {
@@ -45,8 +38,8 @@ export default function ExpenseForm({ categories, setExpenses }) {
             amountZero: false,
         }));
 
-        setExpense(prevExpense => ({
-            ...prevExpense,
+        setExpenseData(prevExpenseData => ({
+            ...prevExpenseData,
             [name]: name === 'date' ? new Date(value) : value,
         }));
     }
@@ -61,12 +54,12 @@ export default function ExpenseForm({ categories, setExpenses }) {
         const newErrors = { amount: '', selectedCategory: '' };
         const newWarnings = { amountZero: false };
 
-        if (Number(expense.amount) < 0) {
+        if (Number(expenseData.amount) < 0) {
             newErrors.amount = '金額には0以上を入力してください';
-        } else if (expense.amount === '') {
+        } else if (expenseData.amount === '') {
             newErrors.amount = '金額を入力してください';
         }
-        if (!expense.selectedCategory) {
+        if (!expenseData.selectedCategory) {
             newErrors.selectedCategory = 'カテゴリーを選択してください';
         }
 
@@ -75,7 +68,7 @@ export default function ExpenseForm({ categories, setExpenses }) {
             return;
         }
 
-        if (Number(expense.amount) === 0) {
+        if (Number(expenseData.amount) === 0) {
             newWarnings.amountZero = true;
         }
         if (Object.values(newWarnings).some(warning => warning)) {
@@ -83,33 +76,33 @@ export default function ExpenseForm({ categories, setExpenses }) {
             return;
         }
 
-        saveExpenseInLocalStorage();
+        saveExpenseDataInLocalStorage();
     }
 
     /**
      * 新規支出登録を生成し、ローカルストレージとstateの両方を更新
      * state更新時、UIが自動的に再描画
      */
-    function saveExpenseInLocalStorage() {
-        const selectedCategoryObject = categories.find(cat => cat.id === expense.selectedCategory);
-        const categoryName = selectedCategoryObject ? selectedCategoryObject.name : '未分類';
+    function saveExpenseDataInLocalStorage() {
+        const selectedCategoryObject = categories.find(cat => cat.name === expenseData.selectedCategory);
+        const categoryName = selectedCategoryObject ? selectedCategoryObject.name : 'No Category';
 
         const newExpense = {
             id: Date.now().toString(),
-            date: expense.date,
-            amount: Number(expense.amount) || 0,
-            memo: expense.memo,
-            selectedCategory: expense.selectedCategory,
+            date: expenseData.date,
+            amount: Number(expenseData.amount) || 0,
+            memo: expenseData.memo,
+            selectedCategory: expenseData.selectedCategory,
             selectedCategoryName: categoryName,
         };
 
-        const existingExpenses = JSON.parse(localStorage.getItem('expenses')) || [];
+        const existingExpenses = JSON.parse(localStorage.getItem('expenseData')) || [];
         const updateExpenses = [...existingExpenses, newExpense];
         setExpenses(updateExpenses);
 
-        localStorage.setItem('expenses', JSON.stringify(updateExpenses));
+        localStorage.setItem('expenseData', JSON.stringify(updateExpenses));
 
-        setExpense({
+        setExpenseData({
             date: new Date(),
             amount: '',
             memo: '',
@@ -121,7 +114,7 @@ export default function ExpenseForm({ categories, setExpenses }) {
     };
 
     const handleConfirmSave = () => {
-        saveExpenseInLocalStorage();
+        saveExpenseDataInLocalStorage();
     };
     const handleCancelSave = () => {
         setWarnings({ amountZero: false });
@@ -136,7 +129,7 @@ export default function ExpenseForm({ categories, setExpenses }) {
                         type="date"
                         id='date'
                         name='date'
-                        value={expense.date.toISOString().substring(0, 10)}
+                        value={expenseData.date.toISOString().substring(0, 10)}
                         onChange={handleChange}
                     />
                 </li>
@@ -146,7 +139,7 @@ export default function ExpenseForm({ categories, setExpenses }) {
                         type="number"
                         id="amount"
                         name='amount'
-                        value={expense.amount}
+                        value={expenseData.amount}
                         onChange={handleChange}
                     />
                     {errors.amount && (
@@ -159,26 +152,18 @@ export default function ExpenseForm({ categories, setExpenses }) {
                         type='text'
                         id='memo'
                         name='memo'
-                        value={expense.memo}
+                        value={expenseData.memo}
                         onChange={handleChange}
                     />
                 </li>
                 <li className={styles.formItem}>
                     <label htmlFor='selectedCategory'>カテゴリー</label>
-                    <select
+                    <tspan
                         id='selectedCategory'
                         name='selectedCategory'
-                        value={expense.selectedCategory}
-                        onChange={handleChange}
                     >
-                        <option value="">-- カテゴリーを選択 --</option>
-
-                        {categories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                            {category.name}
-                        </option>
-                        ))}
-                    </select>
+                        {expenseData.selectedCategory}
+                    </tspan>
                     {errors.selectedCategory && (
                         <p style={{ color: 'red' }}>{errors.selectedCategory}</p>
                     )}
