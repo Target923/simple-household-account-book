@@ -47,6 +47,7 @@ export default function Home() {
         const initialCategories = [
             { id: Date.now().toString(), name: '食費' },
             { id: (Date.now() + 1).toString(), name: '交通費' },
+            { id: (Date.now() + 2).toString(), name: '日用品' }
         ];
         setCategories(initialCategories);
         localStorage.setItem('categories', JSON.stringify(initialCategories));
