@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 
 import styles from './CategoryForm.module.css'
 
+import { IoTrashBin } from 'react-icons/io5';
+
 export default function CategoryForm({ categories, setCategories, expenseData, setExpenseData }) {
     const [categoryName, setCategoryName] = useState('');
 
@@ -90,14 +92,17 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
             </div>
             <div className={styles.categoryList}>
                 <h2>カテゴリ一覧</h2>
-                <ul className={styles.categoriesName}>
+                <ul className={styles.categories}>
                     {categories.map((category) => (
                         <li
-                            className={styles.categoryName}
+                            className={styles.category}
+                            onClick={() => handleClickCategory(category.name)}
                             key={category.id}
                         >
-                            <button onClick={() => handleClickCategory(category.name)}>{category.name}</button>
-                            <button onClick={() => handleDelete(category.id, category.name)}>削除</button>
+                            <div className={styles.categoryName}>{category.name}</div>
+                            <IoTrashBin
+                                className={styles.trashIcon}
+                                onClick={() => handleDelete(category.id, category.name)} />
                         </li>
                     ))}
                 </ul>

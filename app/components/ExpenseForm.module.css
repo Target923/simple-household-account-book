@@ -44,8 +44,3 @@
     font-weight: bold;
     list-style-type: none;
 }
-
-.formItem button {
-    position: absolute;
-    top: 3000px;
-}
