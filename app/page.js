@@ -1,6 +1,6 @@
 'use client';
 import Image from "next/image";
-import styles from "./page.module.css";
+import { CATEGORY_COLORS } from "./components/colors";
 
 import CategoryForm from "./components/CategoryForm";
 import ExpenseForm from "./components/ExpenseForm";
@@ -34,6 +34,7 @@ export default function Home() {
     amount: '',
     memo: '',
     selectedCategory: '',
+    color: '',
   });
 
   /**
@@ -45,9 +46,9 @@ export default function Home() {
         setCategories(storedCategories);
     } else {
         const initialCategories = [
-            { id: Date.now().toString(), name: '食費' },
-            { id: (Date.now() + 1).toString(), name: '交通費' },
-            { id: (Date.now() + 2).toString(), name: '日用品' }
+            { id: Date.now().toString(), name: '食費', color: CATEGORY_COLORS[0] },
+            { id: (Date.now() + 1).toString(), name: '交通費', color: CATEGORY_COLORS[1] },
+            { id: (Date.now() + 2).toString(), name: '日用品', color: CATEGORY_COLORS[2] }
         ];
         setCategories(initialCategories);
         localStorage.setItem('categories', JSON.stringify(initialCategories));

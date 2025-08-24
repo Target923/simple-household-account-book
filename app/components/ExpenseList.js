@@ -7,6 +7,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 
 import styles from './ExpenseList.module.css';
+import { CATEGORY_COLORS } from './colors';
 
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
@@ -55,31 +56,28 @@ export default function ExpenseList({ expenses, setExpenses, categories }) {
     /**
      * カテゴリ毎の金額の集計データ(グラフ表示用)
      * filteredExpenses変更時、再計算
-     * @type {Array<{name: string, value: number}>}
+     * @type {Array<{name: string, value: number, color: string}>}
      */
     const aggregatedData = useMemo(() => {
         return filteredExpenses.reduce((acc, expenseData) => {
             const existingCategory = acc.find(item => item.name === expenseData.selectedCategoryName);
+            const categoryColor = categories.find(cat => cat.name === expenseData.selectedCategoryName)?.color;
+
+            const colorToUse = categoryColor || CATEGORY_COLORS[acc.length % CATEGORY_COLORS.length];
 
             if (existingCategory) {
                 existingCategory.value += Number(expenseData.amount);
             } else {
                 acc.push({
                     name: expenseData.selectedCategoryName,
-                    value: Number(expenseData.amount)
+                    value: Number(expenseData.amount),
+                    color: colorToUse,
                 });
             }
 
             return acc;
         }, []);
-    }, [filteredExpenses]);
-
-    /**
-     * 円グラフの色設定用配列
-     * @constant
-     * @type {Array<string>}
-     */
-    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF19A0', '#19FFD1'];
+    }, [filteredExpenses, categories]);
 
     /**
      * 円グラフのラベルをカスタマイズする関数
@@ -148,7 +146,7 @@ export default function ExpenseList({ expenses, setExpenses, categories }) {
 
         return (
             <ResponsiveContainer width="100%" height="100%">
-                <PieChart width={300} height={300}>
+                <PieChart width={width} height={height}>
                     <Pie
                         data={filteredData}
                         dataKey="value"
@@ -162,7 +160,7 @@ export default function ExpenseList({ expenses, setExpenses, categories }) {
                     >
                         {
                             filteredData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                <Cell key={`cell-${index}`} fill={entry.color} />
                             ))
                         }
                     </Pie>
@@ -178,7 +176,7 @@ export default function ExpenseList({ expenses, setExpenses, categories }) {
     function handleDeleteExpense(expenseDataId) {
         const updateExpenses = expenses.filter(expenseData => expenseData.id !== expenseDataId);
         setExpenses(updateExpenses);
-        localStorage.setItem('expenseData', JSON.stringify(updateExpenses));
+        localStorage.setItem('expenses', JSON.stringify(updateExpenses));
     }
 
     return (
@@ -192,7 +190,13 @@ export default function ExpenseList({ expenses, setExpenses, categories }) {
                 {filteredExpenses.length > 0 && (
                     <ul className={styles.expensesList}>
                         {filteredExpenses.map(expenseData => (
-                            <li className={styles.expenseItems} key={expenseData.id}>
+                            <li 
+                                className={styles.expenseItems}
+                                key={expenseData.id}
+                                style={{
+                                    borderColor: expenseData.color,
+                                }}
+                            >
                                 <div className={styles.categoryAndMemo}>
                                     <div>{expenseData.selectedCategoryName}&nbsp;</div>
                                     <div className={styles.memo}>{expenseData.memo}</div>

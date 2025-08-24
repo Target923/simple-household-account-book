@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 
-import styles from './CategoryForm.module.css'
+import styles from './CategoryForm.module.css';
+import { CATEGORY_COLORS } from './colors';
 
 import { IoTrashBin } from 'react-icons/io5';
 
@@ -32,9 +33,12 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
      * @param {string} categoryName - 選択中カテゴリ
      */
     function handleClickCategory(categoryName) {
+        const currentColor = categories.find(cat => cat.name === categoryName).color;
+
         setExpenseData(prevExpenseData => ({
             ...prevExpenseData,
             selectedCategory: categoryName,
+            color: currentColor,
         }));
     }
 
@@ -47,14 +51,6 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
         const updateCategories = categories.filter(cat => cat.id !== categoryId);
         setCategories(updateCategories);
         localStorage.setItem('categories', JSON.stringify(updateCategories));
-    
-        // if (expenseData.selectedCategory === categoryName)
-        // {
-        //     setExpenseData(prevExpenseData => ({
-        //         ...prevExpenseData,
-        //         selectedCategory: '',
-        //     }));
-        // }
     }
     useEffect(() => {
         if (categories.length > 0) {
@@ -77,6 +73,7 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
         const newCategory = {
             id: Date.now().toString(),
             name: categoryName,
+            color: CATEGORY_COLORS[categories.length % CATEGORY_COLORS.length],
         };
 
         const existingCategories = JSON.parse(localStorage.getItem('categories')) || [];
@@ -98,7 +95,7 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
                     value={categoryName}
                     onChange={handleChange}
                 ></input>
-                <button 
+                <button
                     onClick={handleClickRegister}
                 >
                     この名前で登録する</button>
@@ -114,6 +111,10 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
                             }
                             onClick={() => handleClickCategory(category.name)}
                             key={category.id}
+                            style={{
+                                borderColor: category.color,
+                                backgroundColor: expenseData.selectedCategory === category.name ? `${category.color}95` : 'transparent'
+                            }}
                         >
                             <div className={styles.categoryName}>
                                 {category.name}</div>

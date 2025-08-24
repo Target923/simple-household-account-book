@@ -87,17 +87,18 @@ export default function ExpenseForm({ categories, setExpenses, expenseData, setE
         const selectedCategoryObject = categories.find(cat => cat.name === expenseData.selectedCategory);
         const categoryName = selectedCategoryObject ? selectedCategoryObject.name : 'No Category';
 
-        const newExpense = {
+        const newExpenseData = {
             id: Date.now().toString(),
             date: expenseData.date,
             amount: Number(expenseData.amount) || 0,
             memo: expenseData.memo,
             selectedCategory: expenseData.selectedCategory,
             selectedCategoryName: categoryName,
+            color: expenseData.color,
         };
 
         const existingExpenses = JSON.parse(localStorage.getItem('expenses')) || [];
-        const updateExpenses = [...existingExpenses, newExpense];
+        const updateExpenses = [...existingExpenses, newExpenseData];
         setExpenses(updateExpenses);
 
         localStorage.setItem('expenses', JSON.stringify(updateExpenses));
@@ -107,6 +108,7 @@ export default function ExpenseForm({ categories, setExpenses, expenseData, setE
             amount: '',
             memo: '',
             selectedCategory: '',
+            color: '',
         });
 
         setErrors({ amount: '', selectedCategory: '', });
