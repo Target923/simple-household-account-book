@@ -86,7 +86,7 @@ export default function ExpenseList({ expenses, setExpenses, categories }) {
      */
     const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
         const RADIAN = Math.PI / 180;
-        const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+        const radius = innerRadius + (outerRadius - innerRadius) * 0.65;
         const x = cx + radius * Math.cos(-midAngle * RADIAN);
         const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
@@ -98,7 +98,7 @@ export default function ExpenseList({ expenses, setExpenses, categories }) {
         if (percentage === '0') return null;
 
         return (
-            <text x={x} y={y} fill="black" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize="20">
+            <text x={x} y={y} fill="black" textAnchor={"middle"} dominantBaseline="central">
             <tspan x={x} dy="-0.5em">{`${data.name} ${percentage}%`}</tspan>
             <tspan x={x} dy="1em">{`${data.value}円`}</tspan>
             </text>
@@ -146,7 +146,7 @@ export default function ExpenseList({ expenses, setExpenses, categories }) {
 
         return (
             <ResponsiveContainer width="100%" height="100%">
-                <PieChart width={width} height={height}>
+                <PieChart width={width} height={height} className={styles.customPieChart}>
                     <Pie
                         data={filteredData}
                         dataKey="value"
@@ -157,6 +157,8 @@ export default function ExpenseList({ expenses, setExpenses, categories }) {
                         fill="#8884d8"
                         labelLine={false}
                         label={renderCustomizedLabel}
+                        startAngle={-270}
+                        endAngle={-630}
                     >
                         {
                             filteredData.map((entry, index) => (
@@ -207,7 +209,7 @@ export default function ExpenseList({ expenses, setExpenses, categories }) {
                                         className={styles.deleteIcon}
                                         onClick={() => handleDeleteExpense(expenseData.id)}
                                     >
-                                        <FaTrash /> 削除
+                                        <FaTrash />
                                     </div>
                                 </div>
                             </li>

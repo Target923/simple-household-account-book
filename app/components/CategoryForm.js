@@ -95,13 +95,14 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
                     value={categoryName}
                     onChange={handleChange}
                 ></input>
-                <button
+                <div
+                    className={styles.registerBtn}
                     onClick={handleClickRegister}
                 >
-                    この名前で登録する</button>
+                    カテゴリー登録</div>
             </div>
             <div className={styles.categoryList}>
-                <h2>カテゴリ一覧</h2>
+                <h2>カテゴリー選択</h2>
                 <ul className={styles.categories}>
                     {categories.map((category) => (
                         <li

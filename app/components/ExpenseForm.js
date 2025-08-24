@@ -158,14 +158,19 @@ export default function ExpenseForm({ categories, setExpenses, expenseData, setE
                         onChange={handleChange}
                     />
                 </li>
-                {errors.selectedCategory && (
-                    <li className={styles.formItem}>
-                        <p style={{ color: 'red' }}>{errors.selectedCategory}</p>
-                    </li>
-                )}
             </ul>
             <div>
-                <button className={styles.formItem} onClick={handleClick}>この内容で登録する</button>
+                <div
+                    className={`${styles.formItem} ${styles.registerBtn}`}
+                    onClick={handleClick}
+                >
+                    この内容で登録する
+                </div>
+                {errors.selectedCategory && (
+                    <li className={`${styles.error} ${styles.formItem}`}>
+                        <p>{errors.selectedCategory}</p>
+                    </li>
+                )}
                 {warnings.amountZero && (
                     <div className={styles.formContainer}>
                         <p>金額0円で登録しますか？</p>
