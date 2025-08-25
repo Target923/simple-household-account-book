@@ -9,6 +9,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { FaTimes, FaTrash } from 'react-icons/fa';
+import { IoTrashBin } from 'react-icons/io5';
 
 /**
  * カスタムカレンダーコンポーネント
@@ -178,12 +179,10 @@ export default function CustomCalendar({ expenses, setExpenses, categories }) {
                                         <p>{expense.memo}</p>
                                         <p>{expense.amount}円</p>
                                     </div>
-                                    <div
+                                    <IoTrashBin
                                         className={styles.modalDeleteButton}
                                         onClick={() => handleDeleteExpense(expense.id)}
-                                    >
-                                        <FaTrash />
-                                    </div>
+                                    />
                                 </li>
                             ))}
                         </ul>

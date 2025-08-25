@@ -74,7 +74,7 @@ export default function Home() {
         categories={categories} setExpenses={setExpenses}
         expenseData={expenseData} setExpenseData={setExpenseData}/>
       <CustomCalendar
-        expenses={expenses} setExpense={setExpenses}
+        expenses={expenses} setExpenses={setExpenses}
         categories={categories}/>
       <ExpenseList
         expenses={expenses}

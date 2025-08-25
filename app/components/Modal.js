@@ -2,7 +2,15 @@
 import React from 'react';
 import styles from './Modal.module.css'
 
-const Modal = ({ children, isOpen, onClose }) => {
+/**
+ * モーダルコンポーネント
+ * @param {object} props - コンポーネントプロパティ
+ * @param {React.ReactNode} props.children - モーダル内の子要素
+ * @param {boolean} props.isOpen - モーダル開閉状態
+ * @param {function} props.onClose - モーダル閉鎖ハンドラ
+ * @returns {JSX.Element | null} モーダルJSXエレメント
+ */
+export default function Modal({ children, isOpen, onClose }) {
     if (!isOpen) return null;
 
     return (
@@ -11,7 +19,5 @@ const Modal = ({ children, isOpen, onClose }) => {
                 {children}
             </div>
         </div>
-    )
-};
-
-export default Modal;
+    );
+}

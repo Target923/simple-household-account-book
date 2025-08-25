@@ -1,0 +1,51 @@
+.customCalendarContainer {
+    /* display: flex; */
+    /* justify-content: center; */
+    border: 4px solid silver;
+
+    /* margin: 0, 10vw; */
+    margin-top: 20px;
+}
+
+.modalTitle {
+    text-align: center;
+    margin: 10px;
+    color: black;
+    font-size: 1.5em;
+}
+
+.modalList {
+    list-style: none;
+
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    color: black;
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.modalItem {
+    width: 100%;
+
+    border: 4px solid lime;
+    border-radius: 4px;
+    padding: 5px 10px;
+
+    display: flex;
+    justify-content: space-between;
+    /* align-items: center; */
+}
+
+.modalItemDetails {
+    display: flex;
+}
+
+.modalDeleteButton {
+    cursor: pointer;
+    border: 2px solid red;
+    font-size: 30px;
+    text-align: center;
+    /* margin: 10px auto; */
+}
