@@ -4,6 +4,7 @@ import { CATEGORY_COLORS } from "./components/colors";
 
 import CategoryForm from "./components/CategoryForm";
 import ExpenseForm from "./components/ExpenseForm";
+import CustomCalendar from "./components/CustomCalendar";
 import ExpenseList from "./components/ExpenseList";
 
 import { useState, useEffect } from "react";
@@ -72,6 +73,9 @@ export default function Home() {
       <ExpenseForm 
         categories={categories} setExpenses={setExpenses}
         expenseData={expenseData} setExpenseData={setExpenseData}/>
+      <CustomCalendar
+        expenses={expenses} setExpense={setExpenses}
+        categories={categories}/>
       <ExpenseList
         expenses={expenses}
         setExpenses={setExpenses}

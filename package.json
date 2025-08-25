@@ -10,6 +10,10 @@
     "build:tailwind": "tailwindcss init -p"
   },
   "dependencies": {
+    "@fullcalendar/core": "^6.1.19",
+    "@fullcalendar/daygrid": "^6.1.19",
+    "@fullcalendar/interaction": "^6.1.19",
+    "@fullcalendar/react": "^6.1.19",
     "calendar-react": "^0.2.2",
     "next": "15.4.6",
     "react": "19.1.0",
