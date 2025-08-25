@@ -65,14 +65,43 @@ export default function CustomCalendar({ expenses, setExpenses, categories }) {
             acc[date] = (acc[date] || 0) + Number(expense.amount);
             return acc;
         }, {});
-
-        return Object.keys(dailyTotals).map(date => ({
+        const dailyTotalEvents = Object.keys(dailyTotals).map(date => ({
             id: date,
             title: `合計: ${dailyTotals[date]}円`,
             date: date,
-            backgroundColor: '#c0c0c0',
+            backgroundColor: 'gold',
+            borderColor: 'silver',
+            textColor: 'black',
         }));
-    }, [expenses]);
+
+        const aggregatedData = selectedDateExpenses.reduce((acc, selectedExpense) => {
+            const existingCategory = acc.find(item => item.name === selectedExpense.selectedCategoryName);
+
+            if(existingCategory) {
+                existingCategory.value += Number(selectedExpense.amount);
+            } else {
+                acc.push({
+                    date: selectedExpense.date,
+                    name: selectedExpense.selectedCategoryName,
+                    value: Number(selectedExpense.amount),
+                    color: selectedExpense.color,
+                })
+            }
+
+            return acc;
+        }, []);
+        const expensesEvent = Object.keys(aggregatedData).map(data => ({
+            id: data.date,
+            title: `${data.name}: ${data.value}`,
+            date: data.date,
+            backgroundColor: data.color,
+            borderColor: 'silver',
+            textColor: 'black',
+        }));
+
+
+        return [...dailyTotalEvents, ...expensesEvent];
+    }, [expenses, selectedDateExpenses]);
 
     /**
      * イベントのドラッグ&ドロップハンドラ
@@ -145,9 +174,9 @@ export default function CustomCalendar({ expenses, setExpenses, categories }) {
                 initialView="dayGridMonth"
                 locale="ja"
                 headerToolbar={{
-                    left: 'prev.next today',
-                    center: 'title',
-                    right: '',
+                    left: 'title',
+                    center: '',
+                    right: 'today,prev,next',
                 }}
                 events={calendarEvents}
                 editable={true}
@@ -175,15 +204,20 @@ export default function CustomCalendar({ expenses, setExpenses, categories }) {
                                     }}
                                 >
                                     <div className={styles.modalItemDetails}>
-                                        <p>{expense.selectedCategoryName}</p>
-                                        <p>{expense.memo}</p>
-                                        <p>{expense.amount}円</p>
+                                        <div className={styles.modalItemLeft}>
+                                            <p>{expense.selectedCategoryName}&nbsp;</p>
+                                            <p className={styles.memo}>
+                                                {expense.memo}</p>
+                                        </div>
+                                        <div className={styles.modalItemRight}>
+                                            <p>{expense.amount}円&nbsp;</p>
+                                            <IoTrashBin
+                                                className={styles.modalDeleteButton}
+                                                onClick={() => handleDeleteExpense(expense.id)}
+                                            />
+                                        </div>
                                     </div>
-                                    <IoTrashBin
-                                        className={styles.modalDeleteButton}
-                                        onClick={() => handleDeleteExpense(expense.id)}
-                                    />
-                                </li>
+                                 </li>
                             ))}
                         </ul>
                     ) : (
