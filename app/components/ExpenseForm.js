@@ -138,8 +138,8 @@ export default function ExpenseForm({ categories, setExpenses, expenseData, setE
                 <li className={styles.formItem}>
                     <label htmlFor='amount'>金額</label>
                     <input
-                        type="number"
-                        id="amount"
+                        type='number'
+                        id='amount'
                         name='amount'
                         value={expenseData.amount}
                         onChange={handleChange}

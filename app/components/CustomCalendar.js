@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import Modal from './Modal';
 
 import styles from './CustomCalendar.module.css';
+import { CATEGORY_COLORS } from './colors';
 
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -56,7 +57,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories }) {
     };
 
     /**
-     * 支出データをFullCalendarイベント形式に変換
+     * 合計/支出データを統合し、FullCalendarイベント形式に変換
      * @type {Array<object>}
      */
     const calendarEvents = useMemo(() => {
@@ -69,39 +70,42 @@ export default function CustomCalendar({ expenses, setExpenses, categories }) {
             id: date,
             title: `合計: ${dailyTotals[date]}円`,
             date: date,
-            backgroundColor: 'gold',
-            borderColor: 'silver',
+            backgroundColor: 'azure',
+            borderColor: 'gold',
             textColor: 'black',
+            eventType: 'total'
         }));
 
-        const aggregatedData = selectedDateExpenses.reduce((acc, selectedExpense) => {
-            const existingCategory = acc.find(item => item.name === selectedExpense.selectedCategoryName);
+        const categoryTotals = expenses.reduce((acc, expense) => {
+            const date = getISODateString(expense.date);
+            const key = `${date}-${expense.selectedCategoryName}`;
 
-            if(existingCategory) {
-                existingCategory.value += Number(selectedExpense.amount);
+            if(acc[key]) {
+                acc[key].amount += Number(expense.amount);
             } else {
-                acc.push({
-                    date: selectedExpense.date,
-                    name: selectedExpense.selectedCategoryName,
-                    value: Number(selectedExpense.amount),
-                    color: selectedExpense.color,
-                })
+                acc[key] = {
+                    date: expense.date,
+                    name: expense.selectedCategoryName,
+                    amount: Number(expense.amount),
+                    color: expense.color,
+                    id: key
+                };
             }
-
             return acc;
-        }, []);
-        const expensesEvent = Object.keys(aggregatedData).map(data => ({
-            id: data.date,
-            title: `${data.name}: ${data.value}`,
-            date: data.date,
-            backgroundColor: data.color,
+        }, {});
+        const categoryTotalEvents = Object.values(categoryTotals).map(cat => ({
+            id: cat.id,
+            title: `${cat.name}: ${cat.amount}円`,
+            date: cat.date,
+            backgroundColor: cat.color,
             borderColor: 'silver',
             textColor: 'black',
+            eventType: 'category',
         }));
 
 
-        return [...dailyTotalEvents, ...expensesEvent];
-    }, [expenses, selectedDateExpenses]);
+        return [...dailyTotalEvents, ...categoryTotalEvents];
+    }, [expenses]);
 
     /**
      * イベントのドラッグ&ドロップハンドラ
@@ -179,9 +183,28 @@ export default function CustomCalendar({ expenses, setExpenses, categories }) {
                     right: 'today,prev,next',
                 }}
                 events={calendarEvents}
+                eventDisplay='block'
+                eventContent={(org) => {
+                    const { event } = org;
+                    const isTotal = event.extendedProps.eventType === 'total';
+                    const style = {
+                        fontSize: isTotal ? '1.25em' : '1.1em',
+                        fontWeight: 'bold',
+                        padding: '2px 4px',
+                        marginBottom: '1px',
+                    };
+                    return (
+                        <div style={style}>
+                            {event.title}
+                        </div>
+                    )
+                }}
+                contentHeight='auto'
+                
                 editable={true}
                 eventDrop={handleEventDrop}
                 eventClick={handleEventClick}
+                timeZone='local'
             />
 
             {isModalOpen && (

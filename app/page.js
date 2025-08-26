@@ -5,7 +5,7 @@ import { CATEGORY_COLORS } from "./components/colors";
 import CategoryForm from "./components/CategoryForm";
 import ExpenseForm from "./components/ExpenseForm";
 import CustomCalendar from "./components/CustomCalendar";
-import ExpenseList from "./components/ExpenseList";
+import ExpenseList from "./components/ExpenseChart";
 
 import { useState, useEffect } from "react";
 
