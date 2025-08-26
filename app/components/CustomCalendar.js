@@ -66,7 +66,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
             return acc;
         }, {});
         const dailyTotalEvents = Object.keys(dailyTotals).map(date => ({
-            id: date,
+            id: `total-${date}`,
             title: `合計: ${dailyTotals[date]}円`,
             date: date,
             backgroundColor: 'azure',
@@ -111,8 +111,25 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
      * @param {object} eventDrapInfo - ドラッグ&ドロップイベント情報
      */
     const handleEventDrop = (eventDropInfo) => {
+        if (eventDropInfo.event.extendedProps.eventType === 'total') {
+            eventDropInfo.revert();
+            return;
+        }
         const newDate = eventDropInfo.event.startStr;
         const oldDate = eventDropInfo.oldEvent.startStr;
+
+        const oldStart = eventDropInfo.oldEvent.start;
+        const oldTime = oldStart.toISOString().split('T')[1];
+
+        // const updateExpenses = expenses.map(exp => {
+        //     if (exp.id === eventDropInfo.event.id) {
+        //         return {
+        //             ...exp,
+        //             date: `${newDate}T${oldTime}`,
+        //         };
+        //     }
+        //     return exp;
+        // });
 
         const targetExpenses = expenses.filter(
             expense => getISODateString(expense.date) === oldDate
@@ -122,11 +139,9 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
             expense => getISODateString(expense.date) !== oldDate
         );
 
-        const updateTargetExpenses = targetExpenses.map(expense => ({
-            ...expense,
-            date: newDate + 'T' + (expense.date instanceof Date ?
-                expense.date.toISOString().split('T')[1] :
-                expense.date.split('T')[1]),
+        const updateTargetExpenses = targetExpenses.map(exp => ({
+            ...exp,
+            date: `${newDate}T${oldTime}`
         }));
 
         const updateExpenses = [...otherExpenses, ...updateTargetExpenses];
@@ -180,6 +195,36 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
         }
     };
 
+    /**
+     * 合計と支出を一つのコンポーネントにまとめて描画
+     * @param {object} eventInfo - イベント情報
+     */
+    const renderEventContent = (eventInfo) => {
+        const { event } = eventInfo;
+        const isTotal = event.extendedProps.eventType === 'total';
+        const eventClass = isTotal ? 'event-total' : 'event-category';
+
+        return (
+            <div className={`${styles[eventClass]}`} style={{
+                backgroundColor: isTotal ? 'azure' : event.backgroundColor,
+                color: 'black',
+                border: '1px solid',
+                borderColor: isTotal ? 'gold' : 'silver',
+                padding: '2px 4px',
+                marginBottom: '1px',
+                borderRadius: '4px',
+                display: 'block',
+                fontWeight: isTotal ? 'bold' : 'normal',
+                fontSize: isTotal ? '1.25em' : '1.1em',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+            }}>
+                {event.title}
+            </div>
+        );
+    };
+
     return (
         <div className={styles.customCalendarContainer}>
             <FullCalendar 
@@ -193,22 +238,9 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                 }}
                 events={calendarEvents}
                 eventDisplay='block'
-                eventContent={(org) => {
-                    const { event } = org;
-                    const isTotal = event.extendedProps.eventType === 'total';
-                    const style = {
-                        fontSize: isTotal ? '1.25em' : '1.1em',
-                        fontWeight: 'bold',
-                        padding: '2px 4px',
-                        marginBottom: '1px',
-                    };
-                    return (
-                        <div style={style}>
-                            {event.title}
-                        </div>
-                    )
-                }}
-                contentHeight='auto'
+                eventContent={renderEventContent}
+                eventOrder='-eventType' //逆アルファベット順
+                // contentHeight='auto'
                 editable={true}
                 eventDrop={handleEventDrop}
                 eventClick={handleEventClick}

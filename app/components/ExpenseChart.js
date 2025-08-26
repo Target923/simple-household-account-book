@@ -6,7 +6,7 @@
 'use client';
 import { useState, useMemo, useRef, useEffect } from 'react';
 
-import styles from './ExpenseList.module.css';
+import styles from './ExpenseChart.module.css';
 import { CATEGORY_COLORS } from './colors';
 
 import Calendar from 'react-calendar';

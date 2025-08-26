@@ -22,7 +22,7 @@
 .formItem {
     display: flex;
     width: 0;
-    flex: 1;
+    flex-grow: 1;
     flex-direction: column;
     margin: 10px auto 10px auto;
     padding: 5px;
@@ -59,6 +59,7 @@
 }
 
 .error {
+    width: 50%;
     color: red;
     text-align: center;
 }
