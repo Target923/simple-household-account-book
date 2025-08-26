@@ -30,14 +30,7 @@ import { FaTrash } from 'react-icons/fa';
  }}
  * @returns {JSX.Element} 支出リストのJSXエレメント
  */
-export default function ExpenseList({ expenses, setExpenses, categories }) {
-
-    /**
-     * カレンダーで選択された日付を管理するstate
-     * 初期値は現在の日付
-     * @type {[Date, React.Dispatch<React.SetStateAction<Date>>]}
-     */
-    const [selectedDate, setSelectedDate] = useState(new Date());
+export default function ExpenseList({ expenses, setExpenses, categories, selectedDate, }) {
 
     /**
      * 選択された日付に一致する支出をフィルタリングしたリスト
@@ -184,10 +177,10 @@ export default function ExpenseList({ expenses, setExpenses, categories }) {
     return (
         <div className={styles.expenseListContainer}>
             <div className={styles.calendarList}>
-                <Calendar
+                {/* <Calendar
                     onChange={(date) => setSelectedDate(date)}
                     value={selectedDate}
-                />
+                /> */}
                 <h2>{selectedDate.toLocaleDateString()}の支出</h2>
                 {filteredExpenses.length > 0 && (
                     <ul className={styles.expensesList}>

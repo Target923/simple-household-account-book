@@ -5,7 +5,7 @@ import { CATEGORY_COLORS } from "./components/colors";
 import CategoryForm from "./components/CategoryForm";
 import ExpenseForm from "./components/ExpenseForm";
 import CustomCalendar from "./components/CustomCalendar";
-import ExpenseList from "./components/ExpenseChart";
+import ExpenseChart from "./components/ExpenseChart";
 
 import { useState, useEffect } from "react";
 
@@ -39,6 +39,12 @@ export default function Home() {
   });
 
   /**
+   * カレンダー選択日管理state
+   * @type {[Date, React.Dispatch<React.SetStateAction<Date>>]}
+   */
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  /**
    * コンポーネントマウント時、ローカルストレージからデータ読み込み
    */
   useEffect(() => {
@@ -69,17 +75,21 @@ export default function Home() {
       <hr />
       <CategoryForm
         categories={categories} setCategories={setCategories} 
-        expenseData={expenseData} setExpenseData={setExpenseData}/>
+        expenseData={expenseData} setExpenseData={setExpenseData }/>
       <ExpenseForm 
-        categories={categories} setExpenses={setExpenses}
-        expenseData={expenseData} setExpenseData={setExpenseData}/>
+        categories={categories}
+        setExpenses={setExpenses}
+        expenseData={expenseData} setExpenseData={setExpenseData}
+        selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
       <CustomCalendar
         expenses={expenses} setExpenses={setExpenses}
-        categories={categories}/>
-      <ExpenseList
+        categories={categories}
+        selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
+      <ExpenseChart
         expenses={expenses}
         setExpenses={setExpenses}
-        categories={categories}/>
+        categories={categories}
+        selectedDate={selectedDate} />
     </main>
   )
 }

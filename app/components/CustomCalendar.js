@@ -9,7 +9,6 @@ import { CATEGORY_COLORS } from './colors';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { FaTimes, FaTrash } from 'react-icons/fa';
 import { IoTrashBin } from 'react-icons/io5';
 
 /**
@@ -20,7 +19,7 @@ import { IoTrashBin } from 'react-icons/io5';
  * @param {Array<object>} props.categories - カテゴリリスト
  * @returns {JSX.Element} カレンダーコンポーネントのJSXエレメント
  */
-export default function CustomCalendar({ expenses, setExpenses, categories }) {
+export default function CustomCalendar({ expenses, setExpenses, categories, selectedDate, setSelectedDate }) {
     /**
      * モーダル開閉状態、選択支出データ管理state
      * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
@@ -136,6 +135,16 @@ export default function CustomCalendar({ expenses, setExpenses, categories }) {
     };
 
     /**
+     * 日付クリックハンドラ
+     * グラフ表示用
+     * @param {object} dateClickInfo - 日付クリック情報
+     */
+    const handleDateClick = (dateClickInfo) => {
+        const clickedDate = dateClickInfo.date;
+        setSelectedDate(clickedDate);
+    }
+
+    /**
      * イベントクリックハンドラ
      * クリック日の支出データをモーダル表示
      * @param {object} eventClickInfo - イベントクリック情報
@@ -200,10 +209,10 @@ export default function CustomCalendar({ expenses, setExpenses, categories }) {
                     )
                 }}
                 contentHeight='auto'
-                
                 editable={true}
                 eventDrop={handleEventDrop}
                 eventClick={handleEventClick}
+                dateClick={handleDateClick}
                 timeZone='local'
             />
 

@@ -1,10 +1,12 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import styles from './ExpenseForm.module.css'
 // import { notFound } from 'next/navigation';
 
-export default function ExpenseForm({ categories, setExpenses, expenseData, setExpenseData }) {   
+export default function ExpenseForm({ categories, setExpenses, 
+    expenseData, setExpenseData, 
+    selectedDate, setSelectedDate }) {   
     /**
      * エラー用メッセージ管理state
      * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
@@ -21,6 +23,24 @@ export default function ExpenseForm({ categories, setExpenses, expenseData, setE
     const [warnings, setWarnings] = useState({
         amountZero: false,
     });
+
+    /**
+     * selectedDate変更時、expenseData.dateを更新し、同期
+     */
+    useEffect(() => {
+        if (selectedDate instanceof Date && !isNaN(selectedDate.getTime())) {
+            const year = selectedDate.getFullYear();
+            const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+            const day = String(selectedDate.getDate()).padStart(2, '0');
+            
+            const formattedDate = `${year}-${month}-${day}`;
+
+            setExpenseData(prevExpenseData => ({
+                ...prevExpenseData,
+                date: formattedDate,
+            }));
+        }
+    }, [selectedDate, setExpenseData]);
     
     /**
      * 各入力項目の変更時、expenseDataの状態を更新
@@ -29,6 +49,16 @@ export default function ExpenseForm({ categories, setExpenses, expenseData, setE
     function handleChange(event) {
         const { name, value } = event.target;
 
+        setExpenseData(prevExpenseData => ({
+            ...prevExpenseData,
+            [name]: name === 'date' ? new Date(value) : value,
+        }));
+
+        if (name === 'date') {
+            const newDate = value ? new Date(value) : null;
+            setSelectedDate(newDate);
+        }
+
         setErrors(prevErrors => ({
             ...prevErrors,
             [name]: '',
@@ -36,11 +66,6 @@ export default function ExpenseForm({ categories, setExpenses, expenseData, setE
         setWarnings(prevWarnings => ({
             ...prevWarnings,
             amountZero: false,
-        }));
-
-        setExpenseData(prevExpenseData => ({
-            ...prevExpenseData,
-            [name]: name === 'date' ? new Date(value) : value,
         }));
     }
 
@@ -104,7 +129,7 @@ export default function ExpenseForm({ categories, setExpenses, expenseData, setE
         localStorage.setItem('expenses', JSON.stringify(updateExpenses));
 
         setExpenseData({
-            date: new Date(),
+            date: new Date().toISOString().substring(0, 10),
             amount: '',
             memo: '',
             selectedCategory: '',
@@ -131,7 +156,7 @@ export default function ExpenseForm({ categories, setExpenses, expenseData, setE
                         type="date"
                         id='date'
                         name='date'
-                        value={expenseData.date.toISOString().substring(0, 10)}
+                        value={expenseData.date instanceof Date ? expenseData.date.toISOString().substring(0, 10) : expenseData.date}
                         onChange={handleChange}
                     />
                 </li>
