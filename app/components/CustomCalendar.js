@@ -4,7 +4,6 @@ import { useState, useMemo } from 'react';
 import Modal from './Modal';
 
 import styles from './CustomCalendar.module.css';
-import { CATEGORY_COLORS } from './colors';
 
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -44,6 +43,11 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
     }, [categories]);
 
     /**
+     * ドラッグ中の支出データを管理するstate
+     */
+    const [draggingExpense, setDraggingExpense] = useState(null);
+
+    /**
      * 日付文字列をISO形式に変換するユーティリティ関数
      * @param {string | Date} dateValue - 日付/日付文字列
      * @returns {string} YYYY-MM-DD形式の日付文字列
@@ -62,7 +66,9 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
     const calendarEvents = useMemo(() => {
         const dailyTotals = expenses.reduce((acc, expense) => {
             const date = getISODateString(expense.date);
-            acc[date] = (acc[date] || 0) + Number(expense.amount);
+            if (date) {
+                acc[date] = (acc[date] || 0) + Number(expense.amount);
+            }
             return acc;
         }, {});
         const dailyTotalEvents = Object.keys(dailyTotals).map(date => ({
@@ -77,25 +83,27 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
 
         const categoryTotals = expenses.reduce((acc, expense) => {
             const date = getISODateString(expense.date);
-            const key = `${date}-${expense.selectedCategoryName}`;
 
-            if(acc[key]) {
-                acc[key].amount += Number(expense.amount);
-            } else {
-                acc[key] = {
-                    date: expense.date,
-                    name: expense.selectedCategoryName,
-                    amount: Number(expense.amount),
-                    color: expense.color,
-                    id: key
-                };
+            if (date) {
+                const key = `${date}-${expense.selectedCategoryName}`;
+                if(acc[key]) {
+                    acc[key].amount += Number(expense.amount);
+                } else {
+                    acc[key] = {
+                        date: expense.date,
+                        name: expense.selectedCategoryName,
+                        amount: Number(expense.amount),
+                        color: expense.color,
+                        id: key
+                    };
+                }
             }
             return acc;
         }, {});
         const categoryTotalEvents = Object.values(categoryTotals).map(cat => ({
             id: cat.id,
             title: `${cat.name}: ${cat.amount}円`,
-            date: cat.date,
+            date: getISODateString(cat.date),
             backgroundColor: cat.color,
             borderColor: 'silver',
             textColor: 'black',
@@ -108,46 +116,57 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
 
     /**
      * イベントのドラッグ&ドロップハンドラ
-     * @param {object} eventDrapInfo - ドラッグ&ドロップイベント情報
+     * @param {object} eventDropInfo - ドラッグ&ドロップイベント情報
      */
     const handleEventDrop = (eventDropInfo) => {
         if (eventDropInfo.event.extendedProps.eventType === 'total') {
             eventDropInfo.revert();
             return;
         }
+
         const newDate = eventDropInfo.event.startStr;
-        const oldDate = eventDropInfo.oldEvent.startStr;
+ 
+        const updatedExpenses = expenses.map(exp => {
+            if (`${getISODateString(exp.date)}-${exp.selectedCategoryName}` === eventDropInfo.event.id) {
+                return {
+                    ...exp,
+                    date: newDate,
+                }
+            }
 
-        const oldStart = eventDropInfo.oldEvent.start;
-        const oldTime = oldStart.toISOString().split('T')[1];
+            return exp;
+        });
 
-        // const updateExpenses = expenses.map(exp => {
-        //     if (exp.id === eventDropInfo.event.id) {
-        //         return {
-        //             ...exp,
-        //             date: `${newDate}T${oldTime}`,
-        //         };
-        //     }
-        //     return exp;
-        // });
-
-        const targetExpenses = expenses.filter(
-            expense => getISODateString(expense.date) === oldDate
-        );
-
-        const otherExpenses = expenses.filter(
-            expense => getISODateString(expense.date) !== oldDate
-        );
-
-        const updateTargetExpenses = targetExpenses.map(exp => ({
-            ...exp,
-            date: `${newDate}T${oldTime}`
-        }));
-
-        const updateExpenses = [...otherExpenses, ...updateTargetExpenses];
-        setExpenses(updateExpenses);
-        localStorage.setItem('expenses', JSON.stringify(updateExpenses));
+        setExpenses(updatedExpenses);
+        localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
     };
+
+    /**
+     * ドラッグ開始ハンドラ 
+     */
+    const handleDragStart = (e, expense) => {
+        e.dataTransfer.setData('text/plain', JSON.stringify(expense));
+        setDraggingExpense(expense);
+    };
+
+    /**
+     * カレンダーへのドロップハンドラ
+     */
+    const handleDrop = (e) => {
+        const droppedDateStr = e.dateStr;
+        if (draggingExpense) {
+            const newExpense = {
+                ...draggingExpense,
+                id: uuidv4(),
+                date: droppedDateStr,
+            };
+            const updatedExpenses = [...expenses, newExpense];
+            setExpenses(updatedExpenses);
+            localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
+
+            setDraggingExpense(null);
+        }
+    }
 
     /**
      * 日付クリックハンドラ
@@ -165,14 +184,26 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
      * @param {object} eventClickInfo - イベントクリック情報
      */
     const handleEventClick = (eventClickInfo) => {
-        const clickedDate = eventClickInfo.event.startStr;
+        const clickedEvent = eventClickInfo.event;
+        const clickedDate = clickedEvent.startStr;
+        const eventType = clickedEvent.extendedProps.eventType;
+        const eventId = clickedEvent.id;
 
-        const expensesOnClickedDate = expenses.filter(
-            expense => getISODateString(expense.date) === clickedDate
-        );
+        let expensesToDisplay = [];
 
-        setSelectedDateExpenses(expensesOnClickedDate);
-        setIsModalOpen(true);
+        if (eventType === 'total') {
+            expensesToDisplay = expenses.filter(
+                exp => getISODateString(exp.date) === clickedDate
+            );
+        } else if (eventType === 'category') {
+            expensesToDisplay = expenses.filter(
+                exp => getISODateString(exp.date) === clickedDate &&
+                    `${getISODateString(exp.date)}-${exp.selectedCategoryName}` === eventId
+            );
+        }
+
+        setSelectedDateExpenses(expensesToDisplay);
+        // setIsModalOpen(true);
     };
 
     /**
@@ -191,7 +222,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
         setSelectedDateExpenses(newSelectedExpenses);
 
         if (newSelectedExpenses.length === 0) {
-            setIsModalOpen(false);
+            // setIsModalOpen(false);
         }
     };
 
@@ -226,29 +257,67 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
     };
 
     return (
-        <div className={styles.customCalendarContainer}>
-            <FullCalendar 
-                plugins={[dayGridPlugin, interactionPlugin]}
-                initialView="dayGridMonth"
-                locale="ja"
-                headerToolbar={{
-                    left: 'title',
-                    center: '',
-                    right: 'today,prev,next',
-                }}
-                events={calendarEvents}
-                eventDisplay='block'
-                eventContent={renderEventContent}
-                eventOrder='-eventType' //逆アルファベット順
-                // contentHeight='auto'
-                editable={true}
-                eventDrop={handleEventDrop}
-                eventClick={handleEventClick}
-                dateClick={handleDateClick}
-                timeZone='local'
-            />
+        <div className={styles.mainContainer}>
+            <div className={styles.calendarContainer}>
+                <FullCalendar 
+                    plugins={[dayGridPlugin, interactionPlugin]}
+                    initialView="dayGridMonth"
+                    locale="ja"
+                    headerToolbar={{
+                        left: 'title',
+                        center: '',
+                        right: 'today,prev,next',
+                    }}
+                    events={calendarEvents}
+                    eventDisplay='block'
+                    eventContent={renderEventContent}
+                    eventOrder='-eventType' //逆アルファベット順
+                    contentHeight='auto'
+                    editable={true}
+                    eventDrop={handleEventDrop}
+                    eventClick={handleEventClick}
+                    dateClick={handleDateClick}
+                    timeZone='local'
+                    droppable={true}
+                    drop={handleDrop}
+                />
+            </div>
+            {selectedDateExpenses.length > 0 && (
+                <div className={styles.detailsContainer}>
+                    <h3 className={styles.detailsTitle}>
+                        {new Date(selectedDateExpenses[0].date).toLocaleDateString()}の支出
+                    </h3>
+                    <ul className={styles.detailsList}>
+                        {selectedDateExpenses.map(exp => (
+                            <li
+                                key={exp.id}
+                                className={styles.detailsItem}
+                                style={{
+                                    borderColor: categoryColors[exp.selectedCategoryName] || '#ccc',
+                                }}
+                                draggable="true"
+                                onDragStart={(e) => handleDragStart(e, exp)}
+                            >
+                                <div className={styles.detailsItemLeft}>
+                                    <p>{exp.selectedCategoryName}&nbsp;</p>
+                                    <p className={styles.memo}>
+                                        {exp.memo}</p>
+                                </div>
+                                <div className={styles.detailsItemRight}>
+                                    <p>{exp.amount}円&nbsp;</p>
+                                    <IoTrashBin
+                                        className={styles.deleteButton}
+                                        onClick={() => handleDeleteExpense(exp.id)}
+                                    />
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+            
 
-            {isModalOpen && (
+            {/* {isModalOpen && (
                 <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                     <h3 className={styles.modalTitle}>
                         {selectedDateExpenses.length > 0 ?
@@ -288,7 +357,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                         <p>No Data</p>
                     )}
                 </Modal>
-            )}
+            )} */}
         </div>
     );
 }
