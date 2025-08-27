@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 
 import Modal from './Modal';
 
@@ -31,12 +31,8 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
      */
     const [selectedDateExpenses, setSelectedDateExpenses] = useState([]);
 
-    const calendarRef = React.useRef(null);
-    const [isMounted, setIsMounted] = useState(false);
-
-    React.useEffect(() => {
-        setIsMounted(true);
-    }, []);
+    const calendarRef = useRef(null);
+    const externalEventRef = useRef(null);
 
     /**
      * カテゴリのカラーマップ管理Memo
@@ -50,9 +46,25 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
     }, [categories]);
 
     /**
-     * ドラッグ中の支出データを管理するstate
+     * 外部イベントをドラッグ可能にする
      */
-    const [draggingExpense, setDraggingExpense] = useState(null);
+    useEffect(() => {
+        if (externalEventRef.current) {
+            new FullCalendar.Draggable(externalEventRef.current, {
+                itemSelector: 'fc-event',
+                eventData: function(eventEl) {
+                    const data = JSON.parse(eventEl.getAttribue('data-expense'));
+                    return {
+                        ...data,
+                        id: data.id,
+                        title: `${data.selectedCategoryName}: ${data.amount}円`,
+                        editable: true,
+                        eventType: 'expense',
+                    };
+                }
+            });
+        }
+    }, []);
 
     /**
      * 日付文字列をISO形式に変換するユーティリティ関数
@@ -85,7 +97,8 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
             backgroundColor: 'azure',
             borderColor: 'gold',
             textColor: 'black',
-            eventType: 'total'
+            eventType: 'total',
+            editable: false,
         }));
 
         const categoryTotals = expenses.reduce((acc, expense) => {
@@ -115,6 +128,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
             borderColor: 'silver',
             textColor: 'black',
             eventType: 'category',
+            editable: true,
         }));
 
 
@@ -132,7 +146,6 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
         }
 
         const newDate = eventDropInfo.event.startStr;
- 
         const updatedExpenses = expenses.map(exp => {
             if (`${getISODateString(exp.date)}-${exp.selectedCategoryName}` === eventDropInfo.event.id) {
                 return {
@@ -149,30 +162,23 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
     };
 
     /**
-     * ドラッグ開始ハンドラ 
+     * ドロップイベントハンドラ
+     * FullCalendarへのドロップ時、
+     * ドロップされた要素から支出データを取得し、新支出としてstateへ追加
      */
-    const handleDragStart = (e, expense) => {
-        e.dataTransfer.setData('text/plain', JSON.stringify(expense));
-        setDraggingExpense(expense);
-    };
+    const handleDrop = (dropInfo) => {
+        const droppedElement = dropInfo.draggedEl;
+        const expenseData = JSON.parse(droppedElement.getAttribute('data-expense'));
 
-    /**
-     * カレンダーへのドロップハンドラ
-     */
-    const handleDrop = (e) => {
-        const droppedDateStr = e.dateStr;
-        if (draggingExpense) {
-            const newExpense = {
-                ...draggingExpense,
-                id: uuidv4(),
-                date: droppedDateStr,
-            };
-            const updatedExpenses = [...expenses, newExpense];
-            setExpenses(updatedExpenses);
-            localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
+        const newExpense = {
+            ...expenseData,
+            id: uuidv4(),
+            date: dropInfo.dateStr,
+        };
 
-            setDraggingExpense(null);
-        }
+        const updatedExpenses = [...expenses, newExpense];
+        setExpenses(updatedExpenses);
+        localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
     }
 
     /**
@@ -228,9 +234,9 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
         );
         setSelectedDateExpenses(newSelectedExpenses);
 
-        if (newSelectedExpenses.length === 0) {
-            // setIsModalOpen(false);
-        }
+        // if (newSelectedExpenses.length === 0) {
+        //     setIsModalOpen(false);
+        // }
     };
 
     /**
@@ -287,10 +293,11 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                     timeZone='local'
                     droppable={true}
                     drop={handleDrop}
+                    ref={calendarRef}
                 />
             </div>
             {selectedDateExpenses.length > 0 && (
-                <div className={styles.detailsContainer}>
+                <div className={styles.detailsContainer} ref={externalEventRef}>
                     <h3 className={styles.detailsTitle}>
                         {new Date(selectedDateExpenses[0].date).toLocaleDateString()}の支出
                     </h3>
@@ -302,8 +309,15 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                                 style={{
                                     borderColor: categoryColors[exp.selectedCategoryName] || '#ccc',
                                 }}
-                                draggable="true"
-                                onDragStart={(e) => handleDragStart(e, exp)}
+                                draggable={true}
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                }}
+                                onDragOver={(e) => {
+                                    e.preventDefault();
+                                }}
+                                data-expense={JSON.stringify(exp)}
                             >
                                 <div className={styles.detailsItemLeft}>
                                     <p>{exp.selectedCategoryName}&nbsp;</p>
