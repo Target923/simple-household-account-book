@@ -23,13 +23,20 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
      * モーダル開閉状態、選択支出データ管理state
      * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
      */
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    // const [isModalOpen, setIsModalOpen] = useState(false);
 
     /**
      * 選択日付の支出リスト管理state
      * @type {[Array<object>, React.Dispatch<React.SetStateAction<Array>>]}
      */
     const [selectedDateExpenses, setSelectedDateExpenses] = useState([]);
+
+    const calendarRef = React.useRef(null);
+    const [isMounted, setIsMounted] = useState(false);
+
+    React.useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     /**
      * カテゴリのカラーマップ管理Memo
