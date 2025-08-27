@@ -51,7 +51,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
     useEffect(() => {
         if (externalEventRef.current) {
             new FullCalendar.Draggable(externalEventRef.current, {
-                itemSelector: 'fc-event',
+                itemSelector: 'li.draggable-expense',
                 eventData: function(eventEl) {
                     const data = JSON.parse(eventEl.getAttribue('data-expense'));
                     return {
