@@ -132,7 +132,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
             eventDropInfo.revert();
             return;
         }
-     };
+    };
 
     /**
      * 外部イベントをドラッグ可能にする
@@ -177,9 +177,14 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
             date: dropInfo.dateStr,
         };
 
-        const updatedExpenses = [...expenses, newExpense];
+        const originalId = expenseData.id;
+        const ExpensesWithoutOriginal = expenses.filter(exp => exp.id !== originalId);
+        const updatedExpenses = [...ExpensesWithoutOriginal, newExpense];
+
         setExpenses(updatedExpenses);
         localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
+
+        setSelectedDateExpenses(prev => prev.filter(exp => exp.id !== originalId));
     }
 
     /**
