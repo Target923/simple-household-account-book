@@ -307,7 +307,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                                 key={exp.id}
                                 className={styles.detailsItem}
                                 style={{
-                                    borderColor: categoryColors[exp.selectedCategoryName] || '#ccc',
+                                    backgroundColor: categoryColors[exp.selectedCategoryName] || '#ccc',
                                 }}
                                 draggable={true}
                                 onDrop={(e) => {

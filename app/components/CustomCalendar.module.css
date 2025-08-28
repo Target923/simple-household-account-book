@@ -6,18 +6,81 @@
     --fc-button-hover-bg-color: gold;
 }
 
+.mainContainer {
+    margin: 0 10vw;
+    margin-top: 20px;
+    display: flex;
+    gap: 2rem;
+}
+
 .calendarContainer {
-    /* display: flex; */
-    /* justify-content: center; */
+    flex-basis: 75%;
     border: 4px solid silver;
 
-    margin: 10vw;
-    margin-top: 20px;
     margin-bottom: 0;
     padding: 15px;
 
     box-shadow: 12px 12px 0 rgba(0, 0, 0, 0.25);
 }
+
+.detailsContainer {
+    width: 0;
+    flex-grow: 1;
+    border: 4px solid silver;
+    padding: 10px;
+
+    box-shadow: 12px 12px 0 rgba(0, 0, 0, 0.25);
+}
+
+.detailsTitle {
+    font-size: 1.5em;
+}
+
+.detailsList {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 10px;
+}
+
+.detailsItem {
+    background-color: lime;
+    border: 2px solid silver;
+    border-radius: 4px;
+    padding: 5px;
+    color: black;
+    list-style-type: none;
+
+    display: flex;
+    justify-content: space-between;
+
+    transition: transform 0.1s ease-in;
+}
+.detailsItem:hover {
+    transform: scale(1.05);
+}
+
+.detailsItemLeft {
+    display: flex;
+    align-items: center;
+}
+.detailsItemRight {
+    display: flex;
+    align-items: center;
+}
+.memo {
+    color: #2a2a2a;
+    font-size: 0.8em;
+    inline-size: 5vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.deleteButton {
+    cursor: pointer;
+    color: rgb(50, 50, 50);
+}
+
 
 .modalTitle {
     text-align: center;
@@ -58,11 +121,6 @@
     display: flex;
     align-items: center;
 }
-.memo {
-    color: #5c5c5c;
-    font-size: 0.8em;
-}
-
 .modalDeleteButton {
     cursor: pointer;
     border: 2px solid red;
