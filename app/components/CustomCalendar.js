@@ -1,13 +1,11 @@
 'use client';
 import { useState, useMemo, useEffect, useRef } from 'react';
 
-import Modal from './Modal';
-
 import styles from './CustomCalendar.module.css';
 
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin from '@fullcalendar/interaction';
+import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
 import { IoTrashBin } from 'react-icons/io5';
 
 /**
@@ -19,12 +17,6 @@ import { IoTrashBin } from 'react-icons/io5';
  * @returns {JSX.Element} カレンダーコンポーネントのJSXエレメント
  */
 export default function CustomCalendar({ expenses, setExpenses, categories, selectedDate, setSelectedDate }) {
-    /**
-     * モーダル開閉状態、選択支出データ管理state
-     * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
-     */
-    // const [isModalOpen, setIsModalOpen] = useState(false);
-
     /**
      * 選択日付の支出リスト管理state
      * @type {[Array<object>, React.Dispatch<React.SetStateAction<Array>>]}
@@ -44,27 +36,6 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
             return acc;
         }, {});
     }, [categories]);
-
-    /**
-     * 外部イベントをドラッグ可能にする
-     */
-    useEffect(() => {
-        if (externalEventRef.current) {
-            new FullCalendar.Draggable(externalEventRef.current, {
-                itemSelector: 'li.draggable-expense',
-                eventData: function(eventEl) {
-                    const data = JSON.parse(eventEl.getAttribue('data-expense'));
-                    return {
-                        ...data,
-                        id: data.id,
-                        title: `${data.selectedCategoryName}: ${data.amount}円`,
-                        editable: true,
-                        eventType: 'expense',
-                    };
-                }
-            });
-        }
-    }, []);
 
     /**
      * 日付文字列をISO形式に変換するユーティリティ関数
@@ -114,7 +85,8 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                         name: expense.selectedCategoryName,
                         amount: Number(expense.amount),
                         color: expense.color,
-                        id: key
+                        id: key,
+                        ids: [expense.id],
                     };
                 }
             }
@@ -128,7 +100,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
             borderColor: 'silver',
             textColor: 'black',
             eventType: 'category',
-            editable: true,
+            editable: false,
         }));
 
 
@@ -140,26 +112,55 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
      * @param {object} eventDropInfo - ドラッグ&ドロップイベント情報
      */
     const handleEventDrop = (eventDropInfo) => {
-        if (eventDropInfo.event.extendedProps.eventType === 'total') {
+        if (eventDropInfo.event.extendedProps.eventType === 'expense') {
+            const newDate = eventDropInfo.event.startStr;
+            const eventExpenseIds = eventDropInfo.event.extendedProps.ids;
+
+            const updatedExpenses = expenses.map(exp => {
+                if (eventExpenseIds.includes(exp.id)) {
+                    return {
+                        ...exp,
+                        date: newDate,
+                    }
+                }
+                return exp;
+            });
+
+            setExpenses(updatedExpenses);
+            localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
+        } else {
             eventDropInfo.revert();
             return;
         }
+     };
 
-        const newDate = eventDropInfo.event.startStr;
-        const updatedExpenses = expenses.map(exp => {
-            if (`${getISODateString(exp.date)}-${exp.selectedCategoryName}` === eventDropInfo.event.id) {
-                return {
-                    ...exp,
-                    date: newDate,
+    /**
+     * 外部イベントをドラッグ可能にする
+     */
+    useEffect(() => {
+        if (externalEventRef.current) {
+            const draggable = new Draggable(externalEventRef.current, {
+                itemSelector: '.draggable-expense',
+                eventData: function(eventEl) {
+                    try {
+                        const data = JSON.parse(eventEl.getAttribute('data-expense'));
+                        return {
+                            ...data,
+                            id: crypto.randomUUID(),
+                            title: `${data.selectedCategoryName}: ${data.amount}円`,
+                            editable: true,
+                            eventType: 'expense',
+                        };
+                    } catch (e) {
+                        console.error('Failed to parse event data:', e);
+                        return {};
+                    }
                 }
-            }
+            });
 
-            return exp;
-        });
-
-        setExpenses(updatedExpenses);
-        localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
-    };
+            return () => draggable.destroy();
+        }
+    }, [externalEventRef]);
 
     /**
      * ドロップイベントハンドラ
@@ -172,7 +173,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
 
         const newExpense = {
             ...expenseData,
-            id: uuidv4(),
+            id: crypto.randomUUID(),
             date: dropInfo.dateStr,
         };
 
@@ -216,7 +217,6 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
         }
 
         setSelectedDateExpenses(expensesToDisplay);
-        // setIsModalOpen(true);
     };
 
     /**
@@ -233,10 +233,6 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                 getISODateString(selectedDateExpenses[0]?.date)
         );
         setSelectedDateExpenses(newSelectedExpenses);
-
-        // if (newSelectedExpenses.length === 0) {
-        //     setIsModalOpen(false);
-        // }
     };
 
     /**
@@ -296,89 +292,38 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                     ref={calendarRef}
                 />
             </div>
-            {selectedDateExpenses.length > 0 && (
-                <div className={styles.detailsContainer} ref={externalEventRef}>
+            <div className={styles.detailsContainer} ref={externalEventRef}>
+                {selectedDateExpenses.length > 0 && (
                     <h3 className={styles.detailsTitle}>
                         {new Date(selectedDateExpenses[0].date).toLocaleDateString()}の支出
                     </h3>
-                    <ul className={styles.detailsList}>
-                        {selectedDateExpenses.map(exp => (
-                            <li
-                                key={exp.id}
-                                className={styles.detailsItem}
-                                style={{
-                                    backgroundColor: categoryColors[exp.selectedCategoryName] || '#ccc',
-                                }}
-                                draggable={true}
-                                onDrop={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                }}
-                                onDragOver={(e) => {
-                                    e.preventDefault();
-                                }}
-                                data-expense={JSON.stringify(exp)}
-                            >
-                                <div className={styles.detailsItemLeft}>
-                                    <p>{exp.selectedCategoryName}&nbsp;</p>
-                                    <p className={styles.memo}>
-                                        {exp.memo}</p>
-                                </div>
-                                <div className={styles.detailsItemRight}>
-                                    <p>{exp.amount}円&nbsp;</p>
-                                    <IoTrashBin
-                                        className={styles.deleteButton}
-                                        onClick={() => handleDeleteExpense(exp.id)}
-                                    />
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
-            
-
-            {/* {isModalOpen && (
-                <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-                    <h3 className={styles.modalTitle}>
-                        {selectedDateExpenses.length > 0 ?
-                            new Date(selectedDateExpenses[0].date).toLocaleDateString() :
-                            '支出詳細'
-                        }
-                        の支出
-                    </h3>
-                    {selectedDateExpenses.length > 0 ? (
-                        <ul className={styles.modalList}>
-                            {selectedDateExpenses.map(expense => (
-                                <li
-                                    key={expense.id}
-                                    className={styles.modalItem}
-                                    style={{
-                                        borderColor: categoryColors[expense.selectedCategoryName] || '#ccc',
-                                    }}
-                                >
-                                    <div className={styles.modalItemDetails}>
-                                        <div className={styles.modalItemLeft}>
-                                            <p>{expense.selectedCategoryName}&nbsp;</p>
-                                            <p className={styles.memo}>
-                                                {expense.memo}</p>
-                                        </div>
-                                        <div className={styles.modalItemRight}>
-                                            <p>{expense.amount}円&nbsp;</p>
-                                            <IoTrashBin
-                                                className={styles.modalDeleteButton}
-                                                onClick={() => handleDeleteExpense(expense.id)}
-                                            />
-                                        </div>
-                                    </div>
-                                 </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p>No Data</p>
-                    )}
-                </Modal>
-            )} */}
+                )}
+                <ul className={styles.detailsList}>
+                    {selectedDateExpenses.map(exp => (
+                        <li
+                            key={exp.id}
+                            className={`${styles.detailsItem} draggable-expense`}
+                            style={{
+                                backgroundColor: categoryColors[exp.selectedCategoryName] || '#ccc',
+                            }}
+                            data-expense={JSON.stringify(exp)}
+                        >
+                            <div className={styles.detailsItemLeft}>
+                                <p>{exp.selectedCategoryName}&nbsp;</p>
+                                <p className={styles.memo}>
+                                    {exp.memo}</p>
+                            </div>
+                            <div className={styles.detailsItemRight}>
+                                <p>{exp.amount}円&nbsp;</p>
+                                <IoTrashBin
+                                    className={styles.deleteButton}
+                                    onClick={() => handleDeleteExpense(exp.id)}
+                                />
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            </div>
         </div>
     );
 }
