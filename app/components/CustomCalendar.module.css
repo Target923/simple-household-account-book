@@ -59,6 +59,7 @@
 }
 .detailsItem:hover {
     transform: scale(1.05);
+    cursor: default;
 }
 
 .detailsItemLeft {
@@ -79,4 +80,14 @@
 .deleteButton {
     cursor: pointer;
     color: rgb(50, 50, 50);
+
+    transition: color 0.2s ease;
+}
+.deleteButton:hover {
+    color: red;
+}
+
+.is-selected-date {
+    background-color: aquamarine !important;
+    border: 2px solid gold !important;
 }

@@ -7,6 +7,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
 import { IoTrashBin } from 'react-icons/io5';
+import { split } from 'postcss/lib/list';
 
 /**
  * カスタムカレンダーコンポーネント
@@ -199,7 +200,6 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
 
     /**
      * イベントクリックハンドラ
-     * クリック日の支出データをモーダル表示
      * @param {object} eventClickInfo - イベントクリック情報
      */
     const handleEventClick = (eventClickInfo) => {
@@ -222,6 +222,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
         }
 
         setSelectedDateExpenses(expensesToDisplay);
+        setSelectedDate(clickedEvent.start);
     };
 
     /**
@@ -270,6 +271,23 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
         );
     };
 
+    /**
+     * 選択日に適用するスタイルを渡す
+     * @param {} arg - 
+     * @returns 選択日付用CSSクラス
+     */
+    const applyDateCellClassName = (arg) => {
+        if (selectedDate && arg.date) {
+            const selectedDateStr = selectedDate.toISOString().split('T')[0];
+            const cellDateStr = arg.date.toISOString().split('T')[0];
+
+            if (selectedDateStr === cellDateStr) {
+                return [styles['is-selected-date']];
+            }
+        }
+        return [];
+    };
+
     return (
         <div className={styles.mainContainer}>
             <div className={styles.calendarContainer}>
@@ -294,6 +312,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                     timeZone='local'
                     droppable={true}
                     drop={handleDrop}
+                    dayCellClassNames={applyDateCellClassName}
                     ref={calendarRef}
                 />
             </div>
