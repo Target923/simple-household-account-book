@@ -8,56 +8,10 @@
     margin-top: 20px;
 }
 
-.calendarList {
-    flex-basis: 40%;
+.budgetsList {
+    flex-basis: 25%;
     border: 4px solid silver;
-    padding: 10px;
     box-shadow: 12px 12px 0 rgba(0, 0, 0, 0.25);
-}
-
-.expensesList {
-    border: 3px solid yellowgreen;
-    border-radius: 4px;
-    padding: 15px 10px;
-    list-style-type: none;
-
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
-}
-
-.expenseItems {
-    display: flex;
-    flex-direction: row;
-    padding: 2px 5px;
-    justify-content: space-between;
-
-    font-size: 1.2em;
-
-    border: 2px solid lightgreen;
-    border-radius: 15px;
-
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
-}
-
-.categoryAndMemo {
-    display: flex;
-    align-items: center;
-}
-.amountAndDelete {
-    display: flex;
-    align-items: center;
-}
-
-.memo {
-    color: #cdcdcd;
-    font-size: 0.8em;
-}
-
-.deleteIcon {
-    cursor: pointer;
 }
 
 .pieChart {
