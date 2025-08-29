@@ -9,26 +9,17 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import styles from './ExpenseChart.module.css';
 import { CATEGORY_COLORS } from './colors';
 
-import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css';
-
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-
-import { FaTrash } from 'react-icons/fa';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { PieChart, Pie } from 'recharts';
 
 /**
- * 支出とカテゴリーデータを基に、カレンダーと円グラフを表示するコンポーネント
- * 日付を選択すると、その日の支出データを表示
+ * 支出とカテゴリーデータを基に、円グラフと予算グラフを表示するコンポーネント
  * @param {object} props - コンポーネントプロパティ
  * @param {Array<object>} props.expenses - 支出リスト
- * @param {string} props.expenses.date - 支出の日付
- * @param {string} props.expenses.amount - 支出金額
- * @param {string} props.expenses.selectedCategoryName - カテゴリ名
+ * @param {function} props.setExpenses - 支出リスト更新関数
  * @param {Array<object>} props.categories - カテゴリーリスト
- * @param {function name(params)} props.onDeleteExpense - 支出リスト削除関数
-    
- }}
- * @returns {JSX.Element} 支出リストのJSXエレメント
+ * @param {Date} props.selectedDate - 選択された日付
+ * @returns {JSX.Element} 支出チャートコンポーネント
  */
 export default function ExpenseList({ expenses, setExpenses, categories, selectedDate, }) {
 
@@ -36,18 +27,23 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
      * 予算データの状態管理state
      * 各カテゴリの月別予算情報を管理
      * @type {[Array<object>, React.Dispatch<React.SetStateAction<Array<object>>>]}
-     * @example
-     * budgets = [{
-     *      categoryId: - string
-     *      categoryName - string
-     *      budgetAmount - number
-     * }]
      */
     const [budgets, setBudgets] = useState([]);
 
     /**
+     * 予算入力フォームの表示状態管理
+     * @type {[string|null, React.Dispatch<React.SetStateAction<string|null>>]}
+     */
+    const [editingBudgetId, setEditingBudgetId] = useState(null);
+
+    /**
+     * 予算入力値の状態管理
+     * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
+     */
+    const [budgetInputValue, setBudgetInputValue] = useState('');
+
+    /**
      * 特定の月とカテゴリの支出合計を計算する関数
-     * @param {Array} expenses - 支出データ配列
      * @param {string} categoryName - カテゴリ名
      * @param {string} targetMonth - 対象月（YYYY-MM形式）
      * @returns {number} 支出合計
@@ -63,7 +59,7 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
     }, [expenses]);
 
     /**カテゴリの予算状況を計算する関数（メイン関数）
-d    * @param {string} targetMonth - 対象月
+     * @param {string} targetMonth - 対象月
      * @returns {Array} カテゴリ毎の予算状況
      */
     const calculateBudgetStatus = useCallback((targetMonth) => {
@@ -105,7 +101,60 @@ d    * @param {string} targetMonth - 対象月
     }, [budgets, categories, calculateCategoryExpenseForMonth]);
 
     /**
+     * 予算をローカルストレージに保存
+     * @param {Array<object>} newBudgets - 新予算データ
+     */
+    const saveBudgetsToLocalStorage = useCallback((newBudgets) => {
+        setBudgets(newBudgets);
+        localStorage.setItem('budgets', JSON.stringify(newBudgets));
+    }, []);
+
+    /**
+     * 予算設定/更新関数
+     * @param {string} categoryId - カテゴリID
+     * @param {string} categoryName - カテゴリ名
+     * @param {number} amount - 予算額
+     */
+    const handleSetBudget = useCallback((categoryId, categoryName, amount) => {
+        const existingBudgetIndex = budgets.findIndex(b =>
+            b.categoryId === categoryId && b.month === currentMonth
+        );
+
+        let newBudgets;
+        if (existingBudgetIndex >= 0) {
+            newBudgets = [...budgets];
+            newBudgets[existingBudgetIndex] = {
+                ...newBudgets[existingBudgetIndex],
+                amount: amount
+            };
+        } else {
+            const newBudget = {
+                categoryId: categoryId,
+                categoryName: categoryName,
+                amount: amount,
+                month: currentMonth
+            };
+            newBudgets = [...budgets, newBudget];
+        }
+
+        saveBudgetsToLocalStorage(newBudgets);
+        setEditingBudgetId(null);
+        setBudgetInputValue('');
+    }, [budgets, currentMonth, saveBudgetsToLocalStorage]);
+
+    /**
+     * 予算編集開始
+     * @param {string} categoryId - カテゴリID
+     * @param {number} currentAmount - 現在の予算額
+     */
+    const startEditingBudget = useCallback((categoryId, currentAmount = '') => {
+        setEditingBudgetId(categoryId);
+        setBudgetInputValue(String(currentAmount));
+    }, []);
+
+    /**
      * 現在の月の予算状況を計算
+     * @type {string} YYYY-MM形式の現在月
      */
     const currentMonth = useMemo(() => {
         const year = selectedDate.getFullYear();
@@ -115,6 +164,7 @@ d    * @param {string} targetMonth - 対象月
 
     /**
      * 予算状態データを更新
+     * @type {Array<object>} カテゴリ毎の予算状況
      */
     const budgetStatusData = useMemo(() => {
         return calculateBudgetStatus(currentMonth);
@@ -131,9 +181,71 @@ d    * @param {string} targetMonth - 対象月
     }, []);
 
     /**
-     * 選択された日付に一致する支出をフィルタリングしたリスト
-     * expenses/selectedDate変更時、再計算
-     * @type {Array<object>}
+     * 予算グラフ用データ生成関数
+     * @return {Array<object>} 予算グラフ用データ
+     */
+    const budgetChartData = useMemo(() => {
+        return budgetStatusData
+            .filter(status => status.hasBudget)
+            .map(status => ({
+                categoryName: status.categoryName,
+                budgetAmount: status.budgetAmount,
+                totalExpense: status.totalExpense,
+                usagePercentage: status.usagePercentage,
+                remainingBudget: Math.max(0, status.remainingBudget),
+                overExpense: Math.max(0, -status.remainingBudget),
+                color: status.color,
+                isOverBudget: status.remainingBudget < 0,
+            }));
+    }, [budgetStatusData]);
+
+    /**
+     * 予算グラフ描画用
+     * @returns {JSX.Element} 予算棒グラフコンポーネント
+     */
+    const renderBudgetChart = () => {
+        if (budgetChartData.length === 0) {
+            return (
+                <div>
+                    <p>予算が設定されていません</p>
+                </div>
+            );
+        }
+
+        return (
+            <ResponsiveContainer width="100%" height={300}>
+                <BarChart
+                    data={budgetChartData}
+                    layout="horizontal"
+                    margin={{ top: 20, right: 30, left: 100, bottom: 5 }}
+                >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis
+                        type="category"
+                        dataKey="categoryName"
+                        width={80}
+                        fontSize={12}
+                    />
+                    <Tooltip
+                        formatter={(value, name) => {
+                            if (name === 'totalExpense') return [`${value}円`, '支出額'];
+                            if (name === 'budgetAmount') return [`${value}円`, '予算額'];
+                            return [value, name];
+                        }}
+                    />
+                    <legend />
+
+                    <Bar dataKey="budgetAmount" fill="#e0e0e0" name="予算額" />
+                    <Bar dataKey="totalExpense" fill="#4CAF50" name="支出額" />
+                </BarChart>
+            </ResponsiveContainer>
+        );
+    };
+
+    /**
+     * 選択された日付に一致する支出をフィルタリング（円グラフ用）
+     * @type {Array<object>} 選択日の支出リスト
      */
     const filteredExpenses = useMemo(() => {
         return expenses.filter(expenseData => {
@@ -145,8 +257,7 @@ d    * @param {string} targetMonth - 対象月
     }, [expenses, selectedDate]);
 
     /**
-     * カテゴリ毎の金額の集計データ(グラフ表示用)
-     * filteredExpenses変更時、再計算
+     * カテゴリ毎の金額の集計データ（円グラフ用）
      * @type {Array<{name: string, value: number, color: string}>}
      */
     const aggregatedData = useMemo(() => {
@@ -171,7 +282,7 @@ d    * @param {string} targetMonth - 対象月
     }, [filteredExpenses, categories]);
 
     /**
-     * 円グラフのラベルをカスタマイズする関数
+     * 円グラフのカスタムラベル描画関数
      * @param {object} props - Rechartsが提供するプロパティ(中心座標、半径、割合、etc...)
      * @returns {JSX.Element|null} SVGの<text>要素またはnull
      */
@@ -196,6 +307,9 @@ d    * @param {string} targetMonth - 対象月
         );
     };
 
+    /**
+     * 円グラフのサイズ管理
+     */
     const pieChartRef = useRef(null);
     const [pieChartSize, setPieChartSize] = useState({ width: 0, height: 0 });
 
@@ -220,9 +334,9 @@ d    * @param {string} targetMonth - 対象月
 
     /**
      * 円グラフ描画関数
-     * @returns {JSX.Element} 円グラフまたはメッセージ
+     * @returns {JSX.Element} 円グラフコンポーネント
      */
-    const renderChart = () => {
+    const renderPieChart = () => {
         if (filteredExpenses.length === 0) {
             return <h1>No Data</h1>;
         }
@@ -275,21 +389,30 @@ d    * @param {string} targetMonth - 対象月
     return (
         <div className={styles.expenseListContainer}>
             <div className={styles.budgetsList}>
-                <h4>予算デバッグ</h4>
-                <p>対象月: {currentMonth}</p>
-                {budgetStatusData.map(status => (
-                    <div key={status.categoryName}>
-                        <strong>{status.categoryName}:</strong>
-                        {status.hasBudget ? (
-                            <span>予算{status.budgetAmount}円, 支出{status.totalExpense}円, 使用率{status.usagePercentage}%, 残高{status.remainingBudget}円</span>
-                        ) : (
-                            <span>予算未設定</span>
-                        )} 
-                    </div>
-                ))}
+                <h3>袋分け予算グラフ {currentMonth}</h3>
+
+                {renderBudgetChart()}
+
+                <div>
+                    <h4>デバッグ情報</h4>
+                    {budgetStatusData.map(status => (
+                        <div key={status.categoryName}>
+                            <strong>{status.categoryName}:</strong>
+                            {status.hasBudget ? (
+                                <span>予算{status.budgetAmount}円,
+                                    支出{status.totalExpense}円,
+                                    使用率{status.usagePercentage}%,
+                                    残高{status.remainingBudget}円
+                                </span>
+                            ) : (
+                                <span>予算未設定</span>
+                            )} 
+                        </div>
+                    ))}
+                </div>
             </div>         
             <div ref={pieChartRef} className={styles.pieChart}>
-                {renderChart()}
+                {renderPieChart()}
             </div>
         </div>
     );
