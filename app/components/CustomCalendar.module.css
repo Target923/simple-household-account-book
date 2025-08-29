@@ -88,6 +88,6 @@
 }
 
 .is-selected-date {
-    background-color: aquamarine !important;
-    border: 2px solid gold !important;
+    background-color: rgb(127, 255, 212, 0.2) !important;
+    /* border: 2px solid gold !important; */
 }
