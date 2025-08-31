@@ -22,6 +22,17 @@ import { PieChart, Pie } from 'recharts';
  * @returns {JSX.Element} 支出チャートコンポーネント
  */
 export default function ExpenseList({ expenses, setExpenses, categories, selectedDate, }) {
+    /**
+     * 日付文字列をISO形式に変換するユーティリティ関数
+     * @param {string | Date} dateValue - 日付/日付文字列
+     * @returns {string} YYYY-MM-DD形式の日付文字列
+     */
+    const getISODateString = (dateValue) => {
+        if (dateValue instanceof Date) {
+            return dateValue.toISOString().split('T')[0];
+        }
+        return dateValue.split('T')[0];
+    };
 
     /**
      * 予算データの状態管理state
@@ -51,7 +62,7 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
     const calculateCategoryExpenseForMonth = useCallback((categoryName, targetMonth) => {
         return expenses
             .filter(expense => {
-                const expenseMonth = expense.date.substring(0, 7);
+                const expenseMonth = getISODateString(expense.date).substring(0, 7);
                 return expense.selectedCategoryName === categoryName &&
                         expenseMonth === targetMonth;
             })
@@ -110,6 +121,16 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
     }, []);
 
     /**
+     * 現在の月の予算状況を計算
+     * @type {string} YYYY-MM形式の現在月
+     */
+    const currentMonth = useMemo(() => {
+        const year = selectedDate.getFullYear();
+        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        return `${year}-${month}`;
+    }, [selectedDate]);
+
+    /**
      * 予算設定/更新関数
      * @param {string} categoryId - カテゴリID
      * @param {string} categoryName - カテゴリ名
@@ -151,16 +172,6 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
         setEditingBudgetId(categoryId);
         setBudgetInputValue(String(currentAmount));
     }, []);
-
-    /**
-     * 現在の月の予算状況を計算
-     * @type {string} YYYY-MM形式の現在月
-     */
-    const currentMonth = useMemo(() => {
-        const year = selectedDate.getFullYear();
-        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-        return `${year}-${month}`;
-    }, [selectedDate]);
 
     /**
      * 予算状態データを更新
@@ -220,26 +231,99 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
                     margin={{ top: 20, right: 30, left: 100, bottom: 5 }}
                 >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
+                    <XAxis
+                        type="number"
+                        dataKey="usagePercentage"
+                        domain={[0, 100]}
+                    />
                     <YAxis
                         type="category"
                         dataKey="categoryName"
-                        width={80}
-                        fontSize={12}
+                        width={100}
+                        fontSize={15}
                     />
                     <Tooltip
                         formatter={(value, name) => {
-                            if (name === 'totalExpense') return [`${value}円`, '支出額'];
-                            if (name === 'budgetAmount') return [`${value}円`, '予算額'];
+                            if (name === '使用率') return [`${value}%`, name];
                             return [value, name];
                         }}
                     />
                     <legend />
 
-                    <Bar dataKey="budgetAmount" fill="#e0e0e0" name="予算額" />
-                    <Bar dataKey="totalExpense" fill="#4CAF50" name="支出額" />
+                    <Bar dataKey="usagePercentage" fill="#03c9b8ff" name="使用率" />
                 </BarChart>
             </ResponsiveContainer>
+        );
+    };
+
+    /**
+     * 予算ボタンエリア描画関数
+     * @returns {JSX.Element} 予算設定UI
+     */
+    const renderBudgetSettings = () => {
+        return (
+            <div className={styles.editBudgetsContainer}>
+                <h4 className={styles.editBudgetsTitle}>カテゴリ予算別設定</h4>
+                {categories.map(category => {
+                    const budgetStatus = budgetStatusData.find(bs => bs.categoryId === category.id);
+                    const isEditing = editingBudgetId === category.id;
+
+                    return (
+                        <div key={category.id} className={styles.editBudgetsForm}>
+                            <span className={styles.editBudgetsCategoryName}>
+                                {category.name}
+                            </span>
+
+                            {isEditing ? (
+                                <div className={styles.editBudgetsAmount}>
+                                    <input
+                                        type="number"
+                                        value={budgetInputValue}
+                                        onChange={(e) => setBudgetInputValue(e.target.value)}
+                                        placeholder="予算額"
+                                    />
+                                    <div
+                                        className={styles.editBudgetsSaveButton}
+                                        onClick={() => handleSetBudget(category.id, category.name, Number(budgetInputValue))}
+                                    >
+                                        保存
+                                    </div>
+                                    <div
+                                        className={styles.editBudgetsCancelButton}
+                                        onClick={() => setEditingBudgetId(null)}
+                                    >
+                                        キャンセル
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className={styles.editBudgetsAmount}>
+                                    {budgetStatus?.hasBudget ? (
+                                        <>
+                                            <span>{budgetStatus.budgetAmount}円</span>
+                                            <span style={{color: budgetStatus.remainingBudget < 0 ? 'red' : 'green'}}>
+                                                使用率: {budgetStatus.usagePercentage}%
+                                            </span>
+                                            <div
+                                                className={styles.editBudgetsEditButton}
+                                                onClick={() => startEditingBudget(category.id, budgetStatus.budgetAmount)}
+                                            >
+                                                編集
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div
+                                            className={styles.editBudgetsEditButton}
+                                            onClick={() => startEditingBudget(category.id)}
+                                        >
+                                            予算設定
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
         );
     };
 
@@ -393,23 +477,7 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
 
                 {renderBudgetChart()}
 
-                <div>
-                    <h4>デバッグ情報</h4>
-                    {budgetStatusData.map(status => (
-                        <div key={status.categoryName}>
-                            <strong>{status.categoryName}:</strong>
-                            {status.hasBudget ? (
-                                <span>予算{status.budgetAmount}円,
-                                    支出{status.totalExpense}円,
-                                    使用率{status.usagePercentage}%,
-                                    残高{status.remainingBudget}円
-                                </span>
-                            ) : (
-                                <span>予算未設定</span>
-                            )} 
-                        </div>
-                    ))}
-                </div>
+                {renderBudgetSettings()}
             </div>         
             <div ref={pieChartRef} className={styles.pieChart}>
                 {renderPieChart()}
