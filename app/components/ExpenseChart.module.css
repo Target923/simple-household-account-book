@@ -10,7 +10,40 @@
 
 .graphTitle {
     font-size: 1.5em;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
+
+.monthNavigation {
+    display: flex;
+    align-items: center;
+}
+
+.monthNavigationItem {
+    border-left: 1px solid black;
+    border-top: 1px solid black;
+    border-bottom: 1px solid black;
+    color: black;
+    background-color: silver;
+
+    font-size: 0.7em;
+    font-family: sans-serif;
+    padding: 7px 15px;
+}
+.monthNavigationItem:first-child {
+    border-radius: 4px 0 0 4px;
+}
+.monthNavigationItem:last-child {
+    border-radius: 0 4px 4px 0;
+    border-right: 1px solid black;
+}
+.monthNavigationItem:hover {
+    cursor: pointer;
+    background-color: gold;
+}
+
 
 .budgetsList {
     flex-basis: 50%;

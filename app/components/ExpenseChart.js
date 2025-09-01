@@ -424,25 +424,24 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
      */
     const renderMonthNavigation = () => {
         return (
-            <div className={styles.MonthNavigation}>
+            <div className={styles.monthNavigation}>
                 <div
-                    className={styles.MonthNavigationItem}
+                    className={styles.monthNavigationItem}
                     onClick={() => handleMonthChange(0)}                   
                 >
-                    今月
+                    today
                 </div>
                 <div 
-                    className={styles.MonthNavigationItem}
+                    className={styles.monthNavigationItem}
                     onClick={() => handleMonthChange(-1)}
                 >
-                    ← 前月
+                    ←
                 </div>
-                <div className={styles.MonthNavigationItem}>{displayMonthText}</div>
                 <div
-                    className={styles.MonthNavigationItem}
+                    className={styles.monthNavigationItem}
                     onClick={() => handleMonthChange(1)}
                 >
-                    次月 →
+                    →
                 </div>
             </div>
         );
@@ -594,8 +593,10 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
     return (
         <div className={styles.expenseListContainer}>
             <div className={styles.budgetsList}>
-                <h3 className={styles.graphTitle}>予算管理グラフ {currentMonth}</h3>
-                {renderMonthNavigation()}
+                <div className={styles.graphTitle}>
+                    <h3>予算管理グラフ {currentMonth}</h3>
+                    {renderMonthNavigation()}
+                </div>
 
                 {renderBudgetChart()}
                 {renderBudgetSettings()}
