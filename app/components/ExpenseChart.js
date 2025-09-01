@@ -1,6 +1,7 @@
 /**
  * @file ExpenseList.js
- * @description 月または日付毎の支出を表示、円グラフで集計するコンポーネント
+ * @description 月または日付毎の支出を予算グラフと円グラフで集計するコンポーネント
+ * FullCalendarの月切り替えと連携した予算管理機能を提供
  */
 
 'use client';
@@ -40,6 +41,38 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
      * @type {[Array<object>, React.Dispatch<React.SetStateAction<Array<object>>>]}
      */
     const [budgets, setBudgets] = useState([]);
+
+    /**
+     * 月表示用状態管理
+     * FullCalendarと独立して月を管理し、予算表示に使用
+     * @type {[Date, React.Dispatch<React.SetStateAction<Date>>]}
+     */
+    const [displayMonth, setDisplayMonth] = useState(new Date());
+
+    const handleMonthChange = useCallback((direction) => {
+        setDisplayMonth(prev => {
+            const newDate = new Date(prev);
+            if (direction === 0) {
+                return new Date();
+            } else {
+                newDate.setMonth(prev.getMonth() + direction);
+            }
+            return newDate;
+        });
+    }, []);
+
+    useEffect(() => {
+        if (selectedDate && selectedDate instanceof Date && !isNaN(selectedDate.getTime())) {
+            const selectedYear = selectedDate.getFullYear();
+            const selectedMonth = selectedDate.getMonth();
+            const currentDisplayYear = displayMonth.getFullYear();
+            const currentDisplayMonth = displayMonth.getMonth();
+
+            if (selectedYear !== currentDisplayYear || selectedMonth !== currentDisplayMonth) {
+                setDisplayMonth(new Date(selectedYear, selectedMonth, 1));
+            }
+        }
+    }, [selectedDate, displayMonth]);
 
     /**
      * 予算入力フォームの表示状態管理
@@ -125,14 +158,24 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
     }, []);
 
     /**
-     * 現在の月の予算状況を計算
+     * 現在の月を取得
      * @type {string} YYYY-MM形式の現在月
      */
     const currentMonth = useMemo(() => {
-        const year = selectedDate.getFullYear();
-        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const year = displayMonth.getFullYear();
+        const month = String(displayMonth.getMonth() + 1).padStart(2, '0');
         return `${year}-${month}`;
-    }, [selectedDate]);
+    }, [displayMonth]);
+
+    /**
+     * 月表示テキストを取得
+     * @type {string} - YYYY年MM月形式
+     */
+    const displayMonthText = useMemo(() => {
+        const year = displayMonth.getFullYear();
+        const month = displayMonth.getMonth() + 1;
+        return `${year}年${month}月`;
+    }, [displayMonth]);
 
     /**
      * 予算設定/更新関数
@@ -376,8 +419,38 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
     };
 
     /**
+     * 月切り替えUIコンポーネント
+     * @returns {JSX.Element} 月切り替えボタン群
+     */
+    const renderMonthNavigation = () => {
+        return (
+            <div className={styles.MonthNavigation}>
+                <div
+                    className={styles.MonthNavigationItem}
+                    onClick={() => handleMonthChange(0)}                   
+                >
+                    今月
+                </div>
+                <div 
+                    className={styles.MonthNavigationItem}
+                    onClick={() => handleMonthChange(-1)}
+                >
+                    ← 前月
+                </div>
+                <div className={styles.MonthNavigationItem}>{displayMonthText}</div>
+                <div
+                    className={styles.MonthNavigationItem}
+                    onClick={() => handleMonthChange(1)}
+                >
+                    次月 →
+                </div>
+            </div>
+        );
+    };
+
+    /**
      * 選択された日付に一致する支出をフィルタリング（円グラフ用）
-     * @type {Array<object>} 選択日の支出リスト
+     * @type {Array<object>} 選択日の支出←矢印←矢印
      */
     const filteredExpenses = useMemo(() => {
         return expenses.filter(expenseData => {
@@ -522,9 +595,9 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
         <div className={styles.expenseListContainer}>
             <div className={styles.budgetsList}>
                 <h3 className={styles.graphTitle}>予算管理グラフ {currentMonth}</h3>
+                {renderMonthNavigation()}
 
                 {renderBudgetChart()}
-
                 {renderBudgetSettings()}
             </div>         
             <div ref={pieChartRef} className={styles.pieChart}>
