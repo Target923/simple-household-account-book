@@ -8,65 +8,104 @@
     margin-top: 20px;
 }
 
+.graphTitle {
+    font-size: 1.5em;
+}
+
 .budgetsList {
-    flex-basis: 40%;
+    flex-basis: 50%;
     height: 75vh;
     border: 4px solid silver;
     box-shadow: 12px 12px 0 rgba(0, 0, 0, 0.25);
     padding: 15px
 }
-.budgetsListTitle {
-    font-size: 1.5em;
-}
 
-.editBudgetsContainer {
+.budgetsContainer {
+    height: 35vh;
+}
+.budgetsListContainer {
     margin-bottom: 5px;
     display: flex;
     flex-direction: column;
     gap: 10px;
+
+    height: 100%;
+    overflow-y: auto;
+}
+.budgetsListContainer::-webkit-scrollbar {
+    display: none;
 }
 
-.editBudgetsTitle {
+.budgetsListTitle {
     font-size: 1.5em;
     font-weight: bold;
 }
 
-.editBudgetsForm {
+.budgetsForm {
     border: 2px solid silver;
     background-color: lime;
     color: black;
     border-radius: 4px;
     display: flex;
     justify-content: space-between;
+    align-items: center;
     padding: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
 }
 
-.editBudgetsCategoryName {
+.budgetsCategoryName {
     font-weight: bold;
     font-size: 1em;
 }
 
-.editBudgetsDetails {
+.budgetDetails {
     display: flex;
     gap: 5px;
+    align-items: center;
+    justify-content: flex-end;
 }
 
-.editBudgetsDetailsButton {
-    background-color: whitesmoke;
+.budgetDetailsItem {
+    font-weight: bold;
+    padding: 5px;
+ }
+
+.budgetDetails input[type="number"] {
+    border-width: 4px;
+    border-radius: 2px;
+    padding: 5px;
+    font-weight: bold;
+    width: 40%;
+}
+.budgetDetails input[type="number"]::placeholder {
+    color: azure;
+}
+
+.budgetDetailsButton {
+    background-color: rgb(245, 245, 245, 0.8);
     color: black;
     font-size: 1em;
     font-weight: bold;
     padding: 5px;
     border-radius: 4px;
     cursor: pointer;
+
+    transition: transform 0.1s ease, background-color 0.1s ease;
+}
+.budgetDetailsButton:hover {
+    transform: scale(1.1);
+    background-color: rgba(245, 245, 245, 1);
 }
 
 .pieChart {
     flex-grow: 1;
+    padding: 15px;
     height: 75vh;
     border: 4px solid silver;
     box-shadow: 12px 12px 0 rgba(0, 0, 0, 0.25);
+    
 }
+
 
 .customPieChart path {
     stroke: azure;
