@@ -10,8 +10,55 @@
 
 .budgetsList {
     flex-basis: 40%;
+    height: 75vh;
     border: 4px solid silver;
     box-shadow: 12px 12px 0 rgba(0, 0, 0, 0.25);
+    padding: 15px
+}
+.budgetsListTitle {
+    font-size: 1.5em;
+}
+
+.editBudgetsContainer {
+    margin-bottom: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.editBudgetsTitle {
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.editBudgetsForm {
+    border: 2px solid silver;
+    background-color: lime;
+    color: black;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    padding: 5px;
+}
+
+.editBudgetsCategoryName {
+    font-weight: bold;
+    font-size: 1em;
+}
+
+.editBudgetsDetails {
+    display: flex;
+    gap: 5px;
+}
+
+.editBudgetsDetailsButton {
+    background-color: whitesmoke;
+    color: black;
+    font-size: 1em;
+    font-weight: bold;
+    padding: 5px;
+    border-radius: 4px;
+    cursor: pointer;
 }
 
 .pieChart {
@@ -34,22 +81,3 @@
     font-weight: bold;
     font-size: 1.25em;
 }
-
-.editBudgetsContainer {
-    /* background-color: goldenrod; */
-    padding: 10px;
-}
-
-.editBudgetsTitle {
-    font-size: 1.5em;
-    font-weight: bold;
-}
-
-.editBudgetsForm {
-    border: 2px solid lime;
-    border-radius: 2px;
-    display: flex;
-    justify-content: space-between;
-    gap: 15px;
-}
-

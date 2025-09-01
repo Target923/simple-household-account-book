@@ -199,7 +199,9 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
         return budgetStatusData
             .filter(status => status.hasBudget)
             .map(status => ({
+                categoryId: status.categoryId,
                 categoryName: status.categoryName,
+                shortCategoryName: status.categoryName.substring(0, 2),
                 budgetAmount: status.budgetAmount,
                 totalExpense: status.totalExpense,
                 usagePercentage: status.usagePercentage,
@@ -223,34 +225,59 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
             );
         }
 
+        const handleBarClick = (data) => {
+            if (data && data.payload) {
+                const { categoryId, budgetAmount } = data.payload;
+                startEditingBudget(categoryId, budgetAmount);
+            }
+        };
+
         return (
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height="40%">
                 <BarChart
                     data={budgetChartData}
-                    layout="horizontal"
-                    margin={{ top: 20, right: 30, left: 100, bottom: 5 }}
+                    layout="vertical"
+                    margin={{ top: 20, right: 20, left: -55, bottom: 5 }}
                 >
-                    <CartesianGrid strokeDasharray="3 3" />
+                    <CartesianGrid strokeDasharray="3 3" stroke='silver'/>
                     <XAxis
                         type="number"
-                        dataKey="usagePercentage"
                         domain={[0, 100]}
+                        stroke='goldenrod'
+                        fontWeight='bold'
                     />
                     <YAxis
                         type="category"
-                        dataKey="categoryName"
+                        dataKey="shortCategoryName"
                         width={100}
                         fontSize={15}
+                        stroke='goldenrod'
+                        fontWeight='bold'
                     />
                     <Tooltip
                         formatter={(value, name) => {
-                            if (name === '使用率') return [`${value}%`, name];
+                            if (name === 'usagePercentage') return [`${value}%`, '使用率'];
                             return [value, name];
                         }}
+                        labelFormatter={(label, payload) => {
+                            if (payload && payload.length > 0) {
+                                return payload[0].payload.categoryName;
+                            }
+                            return label;
+                        }} 
+                        labelStyle={{ color: 'azure', fontWeight: 'bold'}}
+                        itemStyle={{ color: 'goldenrod', fontWeight: 'bold'}}
+                        contentStyle={{ backgroundColor: '#555', border: 'none' }}
                     />
                     <legend />
 
-                    <Bar dataKey="usagePercentage" fill="#03c9b8ff" name="使用率" />
+                    <Bar dataKey="usagePercentage" onClick={handleBarClick} style={{ cursor: 'pointer' }}>
+                        {
+                            budgetChartData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))
+                        }
+                    </Bar>
                 </BarChart>
             </ResponsiveContainer>
         );
@@ -269,27 +296,32 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
                     const isEditing = editingBudgetId === category.id;
 
                     return (
-                        <div key={category.id} className={styles.editBudgetsForm}>
+                        <div
+                            key={category.id}
+                            className={styles.editBudgetsForm}
+                            style={{backgroundColor: category.color}}
+                        >
                             <span className={styles.editBudgetsCategoryName}>
                                 {category.name}
                             </span>
 
                             {isEditing ? (
-                                <div className={styles.editBudgetsAmount}>
+                                <div className={styles.editBudgetsDetails}>
                                     <input
+                                        className={styles.editBudgetsDetailsButton}
                                         type="number"
                                         value={budgetInputValue}
                                         onChange={(e) => setBudgetInputValue(e.target.value)}
                                         placeholder="予算額"
                                     />
                                     <div
-                                        className={styles.editBudgetsSaveButton}
+                                        className={styles.editBudgetsDetailsButton}
                                         onClick={() => handleSetBudget(category.id, category.name, Number(budgetInputValue))}
                                     >
                                         保存
                                     </div>
                                     <div
-                                        className={styles.editBudgetsCancelButton}
+                                        className={styles.editBudgetsDetailsButton}
                                         onClick={() => setEditingBudgetId(null)}
                                     >
                                         キャンセル
@@ -473,7 +505,7 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
     return (
         <div className={styles.expenseListContainer}>
             <div className={styles.budgetsList}>
-                <h3>袋分け予算グラフ {currentMonth}</h3>
+                <h3 className={styles.budgetsListTitle}>予算管理グラフ {currentMonth}</h3>
 
                 {renderBudgetChart()}
 
