@@ -303,7 +303,7 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
         return (
             <div className={styles.budgetsContainer}>
                 <div>
-                    <h4 className={styles.budgetsListTitle}>カテゴリ予算別設定</h4>
+                    <h4 className={styles.budgetsListTitle}>予算設定</h4>
                 </div>
                 <div className={styles.budgetsListContainer}>
                     {categories.map(category => {
@@ -528,16 +528,6 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
     };
 
     /**
-     * 支出削除関数()
-     * @param {string} expenseId - 削除ID
-     */
-    function handleDeleteExpense(expenseDataId) {
-        const updateExpenses = expenses.filter(expenseData => expenseData.id !== expenseDataId);
-        setExpenses(updateExpenses);
-        localStorage.setItem('expenses', JSON.stringify(updateExpenses));
-    }
-
-    /**
      * トグルボタンのクリックハンドラ
      * @returns {void}
      */
@@ -548,7 +538,8 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
     return (
         <div className={styles.expenseListContainer}>
             <div className={styles.budgetsList}>
-                <h3 className={styles.graphTitle}>予算管理グラフ {currentMonth}</h3>
+                <h3 className={styles.graphTitle}>予算管理グラフ: {currentMonth}</h3>
+
 
                 {renderBudgetChart()}
                 {renderBudgetSettings()}
