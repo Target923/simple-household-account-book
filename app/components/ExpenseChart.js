@@ -43,36 +43,10 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
     const [budgets, setBudgets] = useState([]);
 
     /**
-     * 月表示用状態管理
-     * FullCalendarと独立して月を管理し、予算表示に使用
-     * @type {[Date, React.Dispatch<React.SetStateAction<Date>>]}
+     * 円グラフの表示モード状態管理（'day' または 'month'）
+     * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
      */
-    const [displayMonth, setDisplayMonth] = useState(new Date());
-
-    const handleMonthChange = useCallback((direction) => {
-        setDisplayMonth(prev => {
-            const newDate = new Date(prev);
-            if (direction === 0) {
-                return new Date();
-            } else {
-                newDate.setMonth(prev.getMonth() + direction);
-            }
-            return newDate;
-        });
-    }, []);
-
-    useEffect(() => {
-        if (selectedDate && selectedDate instanceof Date && !isNaN(selectedDate.getTime())) {
-            const selectedYear = selectedDate.getFullYear();
-            const selectedMonth = selectedDate.getMonth();
-            const currentDisplayYear = displayMonth.getFullYear();
-            const currentDisplayMonth = displayMonth.getMonth();
-
-            if (selectedYear !== currentDisplayYear || selectedMonth !== currentDisplayMonth) {
-                setDisplayMonth(new Date(selectedYear, selectedMonth, 1));
-            }
-        }
-    }, [selectedDate, displayMonth]);
+    const [displayMode, setDisplayMode] = useState('month');
 
     /**
      * 予算入力フォームの表示状態管理
@@ -162,20 +136,10 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
      * @type {string} YYYY-MM形式の現在月
      */
     const currentMonth = useMemo(() => {
-        const year = displayMonth.getFullYear();
-        const month = String(displayMonth.getMonth() + 1).padStart(2, '0');
+        const year = selectedDate.getFullYear();
+        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
         return `${year}-${month}`;
-    }, [displayMonth]);
-
-    /**
-     * 月表示テキストを取得
-     * @type {string} - YYYY年MM月形式
-     */
-    const displayMonthText = useMemo(() => {
-        const year = displayMonth.getFullYear();
-        const month = displayMonth.getMonth() + 1;
-        return `${year}年${month}月`;
-    }, [displayMonth]);
+    }, [selectedDate]);
 
     /**
      * 予算設定/更新関数
@@ -419,46 +383,29 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
     };
 
     /**
-     * 月切り替えUIコンポーネント
-     * @returns {JSX.Element} 月切り替えボタン群
-     */
-    const renderMonthNavigation = () => {
-        return (
-            <div className={styles.monthNavigation}>
-                <div
-                    className={styles.monthNavigationItem}
-                    onClick={() => handleMonthChange(0)}                   
-                >
-                    today
-                </div>
-                <div 
-                    className={styles.monthNavigationItem}
-                    onClick={() => handleMonthChange(-1)}
-                >
-                    ←
-                </div>
-                <div
-                    className={styles.monthNavigationItem}
-                    onClick={() => handleMonthChange(1)}
-                >
-                    →
-                </div>
-            </div>
-        );
-    };
-
-    /**
      * 選択された日付に一致する支出をフィルタリング（円グラフ用）
-     * @type {Array<object>} 選択日の支出←矢印←矢印
+     * @type {Array<object>} 選択日の支出
      */
     const filteredExpenses = useMemo(() => {
+        if (!selectedDate) {
+            return [];
+        }
+
+        if (displayMode === 'month') {
+            const selectedMonth = selectedDate.getFullYear() + '-' + String(selectedDate.getMonth() + 1).padStart(2, '0');
+            return expenses.filter(expenseData => {
+                const expenseMonth = getISODateString(expenseData.date).substring(0, 7);
+                return expenseMonth === selectedMonth;
+            });
+        }
+
         return expenses.filter(expenseData => {
                 const expenseDate = new Date(expenseData.date);
                 return expenseDate.getFullYear() === selectedDate.getFullYear() &&
                         expenseDate.getMonth() === selectedDate.getMonth() &&
                         expenseDate.getDate() === selectedDate.getDate();
         });
-    }, [expenses, selectedDate]);
+    }, [expenses, selectedDate, displayMode]);
 
     /**
      * カテゴリ毎の金額の集計データ（円グラフ用）
@@ -590,19 +537,34 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
         localStorage.setItem('expenses', JSON.stringify(updateExpenses));
     }
 
+    /**
+     * トグルボタンのクリックハンドラ
+     * @returns {void}
+     */
+    const handleToggleClick = () => {
+        setDisplayMode(prevMode => (prevMode === 'day' ? 'month' : 'day'));
+    };
+
     return (
         <div className={styles.expenseListContainer}>
             <div className={styles.budgetsList}>
-                <div className={styles.graphTitle}>
-                    <h3>予算管理グラフ {currentMonth}</h3>
-                    {renderMonthNavigation()}
-                </div>
+                <h3 className={styles.graphTitle}>予算管理グラフ {currentMonth}</h3>
 
                 {renderBudgetChart()}
                 {renderBudgetSettings()}
             </div>         
             <div ref={pieChartRef} className={styles.pieChart}>
-                <h3 className={styles.graphTitle}>支出グラフ {selectedDate.toISOString().substring(0, 10)}</h3>
+                <div className={styles.chartTitleContainer}>
+                    <h3 className={styles.graphTitle}>
+                        支出内訳: {displayMode === 'day' ? selectedDate.toISOString().substring(0, 10) : currentMonth}
+                    </h3>
+                    <div
+                        className={styles.toggleButton}
+                        onClick={handleToggleClick}
+                    >
+                        {displayMode === 'day' ? '日別' : '月別'}
+                    </div>
+                </div>
 
                 {renderPieChart()}
             </div>
