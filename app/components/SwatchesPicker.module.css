@@ -1,0 +1,32 @@
+.picker {
+    display: flex;
+}
+
+.picker :global(.react-colorful) {
+    width: 50%;
+    height: 100px;
+}
+
+.pickerSwatches {
+    width: 50%;
+    display: flex;
+    flex-wrap: wrap;
+    padding: 5px;
+    gap: 5px;
+    justify-content: space-around;
+}
+
+.pickerSwatch {
+    width: 24px;
+    height: 24px;
+    border: none;
+    padding: 0;
+    border-radius: 4px;
+    cursor: pointer;
+    outline: none;
+
+    transition: transform 0.1s ease;
+}
+.pickerSwatch:hover {
+    transform: scale(0.9);
+}

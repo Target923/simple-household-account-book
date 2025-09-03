@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 
 import styles from './ExpenseForm.module.css'
-// import { notFound } from 'next/navigation';
 
 export default function ExpenseForm({ categories, setExpenses, 
     expenseData, setExpenseData, 

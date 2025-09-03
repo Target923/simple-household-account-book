@@ -75,6 +75,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
 
         const categoryTotals = expenses.reduce((acc, expense) => {
             const date = getISODateString(expense.date);
+            const categoryName = expense.selectedCategoryName;
 
             if (date) {
                 const key = `${date}-${expense.selectedCategoryName}`;
@@ -85,7 +86,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                         date: expense.date,
                         name: expense.selectedCategoryName,
                         amount: Number(expense.amount),
-                        color: expense.color,
+                        color: categoryColors[categoryName] || '#333',
                         id: key,
                         ids: [expense.id],
                     };
@@ -106,7 +107,20 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
 
 
         return [...dailyTotalEvents, ...categoryTotalEvents];
-    }, [expenses]);
+    }, [expenses, categoryColors]);
+
+    /**
+     * FullCalendarイベントソースを動的に更新
+     */
+    useEffect(() => {
+        const calendarApi = calendarRef.current?.getApi();
+        if (calendarApi) {
+            setTimeout(() => {
+                calendarApi.removeAllEvents();
+                calendarApi.addEventSource(calendarEvents);
+            }, 0);
+        }
+    }, [calendarEvents]);
 
     /**
      * イベントのドラッグ&ドロップハンドラ

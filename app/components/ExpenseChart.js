@@ -8,7 +8,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 
 import styles from './ExpenseChart.module.css';
-import { CATEGORY_COLORS } from './colors';
+import { CATEGORY_COLORS } from './category_colors';
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { PieChart, Pie } from 'recharts';

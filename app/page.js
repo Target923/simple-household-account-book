@@ -1,6 +1,6 @@
 'use client';
 import Image from "next/image";
-import { CATEGORY_COLORS } from "./components/colors";
+import { CATEGORY_COLORS } from "./components/category_colors";
 
 import CategoryForm from "./components/CategoryForm";
 import ExpenseForm from "./components/ExpenseForm";

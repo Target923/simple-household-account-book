@@ -11,4 +11,3 @@ export const CATEGORY_COLORS = [
     '#ffa600', // 濃いオレンジ
     '#003f5c', // 濃い青
 ];
-
