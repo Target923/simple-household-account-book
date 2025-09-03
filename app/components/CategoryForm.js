@@ -68,6 +68,10 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
         const updateCategories = categories.filter(cat => cat.id !== categoryId);
         setCategories(updateCategories);
         localStorage.setItem('categories', JSON.stringify(updateCategories));
+
+        const existingBudgets = JSON.parse(localStorage.getItem('budgets')) || []
+        const updateBudgets = existingBudgets.filter(budget => budget.categoryName !== categoryName);
+        localStorage.setItem('budgets', JSON.stringify(updateBudgets));
     }
     useEffect(() => {
         if (categories.length > 0) {
