@@ -5,26 +5,43 @@ import styles from './CategoryForm.module.css';
 import { CATEGORY_COLORS } from './colors';
 
 import { IoTrashBin } from 'react-icons/io5';
+import { IoAddCircleSharp } from "react-icons/io5";
 
 export default function CategoryForm({ categories, setCategories, expenseData, setExpenseData }) {
     const [categoryName, setCategoryName] = useState('');
+    const [placeholder, setPlaceholder] = useState('新規カテゴリー')
 
     /**
-     * 入力フォームの値が変更されるたびに実行、categoryNameの状態を更新
+     * 入力フォームの値変更時、categoryNameの状態を更新
      * @param {ChangeEvent<HTMLInputElement>} event - Input要素の変更イベント
      */
     function handleChange(event) {
         setCategoryName(event.target.value);
     }
 
+
+    /**
+     * 入力フォームクリック時、placeholderを非表示
+     * @param {FocusEvent<HTMLInputElement>} event - Focusイベント
+     */
+    const handleFocus = () => {
+        setPlaceholder('');
+    };
+
+    const handleBlur = (e) => {
+        if (e.target.value === '') setPlaceholder('新規カテゴリー');
+    };
+
     /**
      * 登録ボタンクリック時に実行、新規カテゴリを保存
      * @param {MouseEvent<HTMLButtonElement>} event - Button要素の変更イベント 
      */
     function handleClickRegister(event) {
-        event.preventDefault();
-        if (categoryName) {
-            saveCategoryInLocalStorage();
+        if (event.type === 'click' || event.key === 'Enter') {
+            event.preventDefault();
+            if (categoryName.trim()) {
+                saveCategoryInLocalStorage();
+            }
         }
     }
 
@@ -87,20 +104,6 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
 
     return (
         <div className={styles.formContainer}>
-            <div className={styles.inputSection}>
-                <label htmlFor="categoryName">新規カテゴリー名</label>
-                <input
-                    type="text"
-                    id="categoryName"
-                    value={categoryName}
-                    onChange={handleChange}
-                ></input>
-                <div
-                    className={styles.registerBtn}
-                    onClick={handleClickRegister}
-                >
-                    カテゴリー登録</div>
-            </div>
             <div className={styles.categoryList}>
                 <h2>カテゴリー選択</h2>
                 <ul className={styles.categories}>
@@ -118,12 +121,26 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
                             }}
                         >
                             <div className={styles.categoryName}>
-                                {category.name}</div>
+                                {category.name}
+                            </div>
                             <IoTrashBin
-                                className={styles.trashIcon}
-                                onClick={() => handleDelete(category.id, category.name)} />
+                                className={styles.Icon}
+                                onClick={() => handleDelete(category.id, category.name)}
+                            />
                         </li>
                     ))}
+                    <li className={styles.register}>
+                        <input
+                            type="text"
+                            id="categoryName"
+                            value={categoryName}
+                            onChange={handleChange}
+                            onKeyDown={handleClickRegister}
+                            onFocus={handleFocus}
+                            onBlur={handleBlur}
+                            placeholder={placeholder}
+                        ></input>
+                    </li>
                 </ul>
             </div>
         </div>
