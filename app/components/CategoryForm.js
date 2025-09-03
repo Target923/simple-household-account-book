@@ -136,7 +136,10 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
                                 `${styles.category}
                                 ${expenseData.selectedCategory === category.name ? styles.selected : ''}`
                             }
-                            onClick={() => handleClickCategory(category.name)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleClickCategory(category.name);
+                            }}
                             key={category.id}
                             style={{
                                 borderColor: category.color,
@@ -157,12 +160,15 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
                                     />
                                     <IoTrashBin
                                         className={styles.Icon}
-                                        onClick={() => handleDelete(category.id, category.name)}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDelete(category.id, category.name);
+                                        }}
                                     />
                                 </div>
                             </div>
                             {editingColorId === category.id && (
-                                <div className={styles.colorPickerContainer}>
+                                <div className={`${styles.colorPickerContainer} ${editingColorId === category.id ? styles.visible : ''}`}>
                                     <SwatchesPicker
                                         color={category.color}
                                         onChange={(newColor) => handleColorChange(category.id, newColor)}

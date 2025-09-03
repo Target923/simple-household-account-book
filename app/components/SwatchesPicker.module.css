@@ -14,6 +14,7 @@
     padding: 5px;
     gap: 5px;
     justify-content: space-around;
+    cursor: default;
 }
 
 .pickerSwatch {
@@ -29,4 +30,5 @@
 }
 .pickerSwatch:hover {
     transform: scale(0.9);
+    cursor: pointer;
 }
