@@ -192,6 +192,8 @@ export default function CategoryForm({ categories, setCategories, expenses, setE
                             key={category.id}
                             style={{
                                 borderColor: category.color,
+                                borderTopColor: `${category.color}90`,
+                                borderLeftColor: `${category.color}90`,
                                 backgroundColor: expenseData.selectedCategory === category.name ? `${category.color}95` : 'transparent'
                             }}
                         >

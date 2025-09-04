@@ -1,27 +1,10 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 import styles from './ExpenseForm.module.css'
 
-export default function ExpenseForm({ categories, setExpenses, 
-    expenseData, setExpenseData, 
-    selectedDate, setSelectedDate }) {   
-    /**
-     * エラー用メッセージ管理state
-     * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
-     */
-    const [errors, setErrors] = useState({
-        amount: '',
-        selectedCategory: '',
-    });
-
-    /**
-     * 警告用メッセージ管理state
-     * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
-     */
-    const [warnings, setWarnings] = useState({
-        amountZero: false,
-    });
+export default function ExpenseForm({ categories, setExpenses, expenseData, setExpenseData, selectedDate, setSelectedDate }) {
+    const textareaRef = useRef(null);
 
     /**
      * selectedDate変更時、expenseData.dateを更新し、同期
@@ -57,47 +40,32 @@ export default function ExpenseForm({ categories, setExpenses,
             const newDate = value ? new Date(value) : null;
             setSelectedDate(newDate);
         }
-
-        setErrors(prevErrors => ({
-            ...prevErrors,
-            [name]: '',
-        }));
-        setWarnings(prevWarnings => ({
-            ...prevWarnings,
-            amountZero: false,
-        }));
     }
 
     /**
      * 登録ボタンクリック時に実行、支出内容を保存
      * @param {MouseEvent<HTMLButtonElement>} event - ボタンクリックイベント
      */
-    function handleClick(event) {
+    function handleSave(event) {
         event.preventDefault();
 
-        const newErrors = { amount: '', selectedCategory: '' };
-        const newWarnings = { amountZero: false };
-
-        if (Number(expenseData.amount) < 0) {
-            newErrors.amount = '金額には0以上を入力してください';
-        } else if (expenseData.amount === '') {
-            newErrors.amount = '金額を入力してください';
-        }
         if (!expenseData.selectedCategory) {
-            newErrors.selectedCategory = 'カテゴリーを選択してください';
-        }
-
-        if (Object.values(newErrors).some(error => error !== '')) {
-            setErrors(newErrors);
+            confirm('カテゴリーを選択してください');
             return;
         }
-
+        if (Number(expenseData.amount) < 0) {
+            confirm('金額には0以上を入力してください');
+            return;
+        } else if (expenseData.amount === '') {
+            confirm('金額を入力してください');
+            return;
+        }
+ 
         if (Number(expenseData.amount) === 0) {
-            newWarnings.amountZero = true;
-        }
-        if (Object.values(newWarnings).some(warning => warning)) {
-            setWarnings(newWarnings);
-            return;
+            if (confirm('金額0円で登録しますか?')) {
+                saveExpenseDataInLocalStorage()
+                return;
+            }
         }
 
         saveExpenseDataInLocalStorage();
@@ -134,22 +102,22 @@ export default function ExpenseForm({ categories, setExpenses,
             selectedCategory: '',
             color: '',
         });
-
-        setErrors({ amount: '', selectedCategory: '', });
-        setWarnings({ amountZero: false });
     };
 
-    const handleConfirmSave = () => {
-        saveExpenseDataInLocalStorage();
-    };
-    const handleCancelSave = () => {
-        setWarnings({ amountZero: false });
+    /**
+     * EnterKey押下時にフォーカスを外す
+     * @param {*} event 
+     */
+    const handleKeyDown = (event) => {
+        if (event.key === 'Enter') {
+            te.current.blur();
+        }
     };
 
     return (
         <div className={styles.formInput}>
             <ul className={styles.formContainer}>
-                <li className={styles.formItem}>
+                <li className={styles.formItem} style={{ backgroundColor:'palevioletred' }}>
                     <label htmlFor='date'>日付</label>
                     <input
                         type="date"
@@ -159,7 +127,7 @@ export default function ExpenseForm({ categories, setExpenses,
                         onChange={handleChange}
                     />
                 </li>
-                <li className={styles.formItem}>
+                <li className={styles.formItem} style={{ backgroundColor: 'palegoldenrod' }}>
                     <label htmlFor='amount'>金額</label>
                     <input
                         type='number'
@@ -167,43 +135,33 @@ export default function ExpenseForm({ categories, setExpenses,
                         name='amount'
                         value={expenseData.amount}
                         onChange={handleChange}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                handleSave(e);
+                            }
+                        }}
                     />
-                    {errors.amount && (
-                        <p style={{ color: 'red' }}>{errors.amount}</p>
-                    )}
                 </li>
-                <li className={styles.formItem}>
+                <li className={styles.formItem} style={{ backgroundColor: 'paleturquoise' }}>
                     <label htmlFor='memo'>メモ</label>
-                    <input
+                    <textarea
                         type='text'
+                        ref={textareaRef}
                         id='memo'
                         name='memo'
                         value={expenseData.memo}
                         onChange={handleChange}
+                        onKeyDown={handleKeyDown}
                     />
                 </li>
             </ul>
             <div>
                 <div
                     className={`${styles.formItem} ${styles.registerBtn}`}
-                    onClick={handleClick}
+                    onClick={handleSave}
                 >
                     この内容で登録する
                 </div>
-                {errors.selectedCategory && (
-                    <li className={`${styles.error} ${styles.formItem}`}>
-                        <p>{errors.selectedCategory}</p>
-                    </li>
-                )}
-                {warnings.amountZero && (
-                    <div className={styles.formContainer}>
-                        <p>金額0円で登録しますか？</p>
-                        <div>
-                            <button className={styles.formItem} onClick={handleConfirmSave}>はい</button>
-                            <button className={styles.formItem} onClick={handleCancelSave}>いいえ</button>
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
     )
