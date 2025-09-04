@@ -9,7 +9,7 @@ import { IoTrashBin } from 'react-icons/io5';
 import { IoAddCircleSharp, IoColorPaletteSharp } from "react-icons/io5";
 import { MdModeEdit } from "react-icons/md";
 
-export default function CategoryForm({ categories, setCategories, expenseData, setExpenseData }) {
+export default function CategoryForm({ categories, setCategories, expenses, setExpenses, expenseData, setExpenseData }) {
     const [categoryName, setCategoryName] = useState('');
     const [placeholder, setPlaceholder] = useState('新規カテゴリー')
 
@@ -64,15 +64,27 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
      * 編集したカテゴリー名を保存
      * @param {string} categoryId - 編集中ID
      */
-    const handleSaveEdit = (categoryId) => {
+    const handleSaveEdit = (categoryId, categoryName) => {
         if (!editingCategory?.name) return;
+
+        const isCategoryExists = categories.some(cat => cat.name === editingCategory.name);
+        if (isCategoryExists) return;
 
         const updatedCategories = categories.map(cat =>
             cat.id === categoryId ? { ...cat, name: editingCategory.name } : cat,
         );
         setCategories(updatedCategories);
         localStorage.setItem('categories', JSON.stringify(updatedCategories));
-        setEditingCategory(['']);
+
+        const updatedExpenses = expenses.map(exp =>
+            exp.selectedCategoryName === categoryName ?
+            { ...exp, selectedCategory: editingCategory.name, selectedCategoryName: editingCategory.name } :
+            exp,
+        )
+        setExpenses(updatedExpenses);
+        localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
+
+        setEditingCategory('');
     }
     
     /**
@@ -80,6 +92,9 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
      * state更新時、UIが自動的に再描画
      */
     function saveCategoryInLocalStorage() {
+        const isCategoryExists = categories.some(cat => cat.name === categoryName);
+        if (isCategoryExists) return;
+
         const newCategory = {
             id: Date.now().toString(),
             name: categoryName,
@@ -175,17 +190,17 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
                             <div className={styles.categoryDetails}>
                                 {editingCategory && editingCategory.id === category.id ? (
                                     <input
-                                        className={styles.editInput}
                                         type="text"
                                         value={editingCategory.name}
                                         onChange={handleEditChange}
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter') {
-                                                handleSaveEdit(category.id);
+                                                handleSaveEdit(category.id, category.name);
                                             }
                                         }}
-                                        onBlur={() => handleSaveEdit(category.id)}
+                                        onBlur={() => handleSaveEdit(category.id, category.name)}
                                         autoFocus
+                                        className={styles.editInput}
                                     />
                                 ) : (
                                     <div className={styles.categoryName}>

@@ -74,7 +74,8 @@ export default function Home() {
       <h1>理想の家計簿</h1>
       <hr />
       <CategoryForm
-        categories={categories} setCategories={setCategories} 
+        categories={categories} setCategories={setCategories}
+        expenses={expenses} setExpenses={setExpenses} 
         expenseData={expenseData} setExpenseData={setExpenseData }/>
       <ExpenseForm 
         categories={categories}
