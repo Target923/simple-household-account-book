@@ -6,8 +6,7 @@ import styles from './CustomCalendar.module.css';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
-import { IoTrashBin } from 'react-icons/io5';
-import { split } from 'postcss/lib/list';
+import { IoTrashBin, IoCreate } from 'react-icons/io5';
 
 /**
  * カスタムカレンダーコンポーネント
@@ -23,6 +22,22 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
      * @type {[Array<object>, React.Dispatch<React.SetStateAction<Array>>]}
      */
     const [selectedDateExpenses, setSelectedDateExpenses] = useState([]);
+
+    /**
+     * 編集中の支出ID管理state
+     * @type {[string|null, React.Dispatch<React.SetStateAction<string|null>>]}
+     */
+    const [editingExpenseId, setEditingExpenseId] = useState(null);
+
+    /**
+     * 編集中の支出データ管理state
+     * @type {[object, React.Dispatch<React.SetStateAction<object>>]}
+     */
+    const [editingExpenseData, setEditingExpenseData] = useState({
+        amount: '',
+        memo: '',
+        selectedCategoryName: '',
+    });
 
     const calendarRef = useRef(null);
     const externalEventRef = useRef(null);
@@ -49,6 +64,89 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
         }
         return dateValue.split('T')[0];
     };
+
+    /**
+     * 支出編集開始ハンドラ
+     * @param {object} expense - 編集対象の支出データ
+     */
+    const handleStartEdit = (expense) => {
+        setEditingExpenseId(expense.id);
+        setEditingExpenseData({
+            amount: expense.amount.toISOString(),
+            memo: expense.memo,
+            selectedCategoryName: expense.selectedCategoryName,
+        });
+    };
+
+    /**
+     * 編集中データの変更ハンドラ
+     * @param {string} field - 変更するフィールド名
+     * @param {string} value - 新しい値
+     */
+    const handleEditChange = (field, value) => {
+        setEditingExpenseData(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    /**
+     * 編集保存ハンドラ
+     * @param {string} expenseId - 保存する支出ID
+     */
+    const handleSaveEdit = (expenseId) => {
+        if (!editingExpenseData.amount || Number(editingExpenseData.amount) < 0) {
+            alert('正しい金額を入力してください');
+            return;
+        }
+        if (!editingExpenseData.selectedCategoryName) {
+            alert('カテゴリを選択してください');
+            return;
+        }
+
+        const selectedCategory = categories.find(cat => cat.name === editingExpenseData.selectedCategoryName);
+        const categoryColor = selectedCategory ? selectedCategory.color : '#333'; //のちのち
+
+        const updatedExpenses = expenses.map(exp => {
+            if (exp.id === expenseId) {
+                return {
+                    ...exp,
+                    amount: Number(editingExpenseData.amount),
+                    memo: editingExpenseData.memo,
+                    selectedCategoryName: editingExpenseData.selectedCategoryName,
+                    color: categoryColor,
+                }
+            }
+            return exp;
+        });
+
+        setExpenses(updatedExpenses);
+        localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
+
+        const updatedSelectedExpenses = updatedExpenses.filter(
+            exp => getISODateString(exp.date) === getISODateString(selectedDate)
+        );
+        setSelectedDateExpenses(updatedSelectedExpenses);
+
+        setEditingExpenseId(null);
+        setEditingExpenseData({
+            amount: '',
+            memo: '',
+            selectedCategoryName: '',
+        });
+    }
+
+    /**
+     *  編集キャンセルハンドラ
+     */
+    const handleCancelEdit = () => {
+        setEditingExpenseId(null);
+        setEditingExpenseData({
+            amount: '',
+            memo: '',
+            selectedCategoryName: '',
+        });
+    }
 
     /**
      * 合計/支出データを統合し、FullCalendarイベント形式に変換

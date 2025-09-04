@@ -96,11 +96,9 @@ export default function ExpenseForm({ categories, setExpenses, expenseData, setE
         localStorage.setItem('expenses', JSON.stringify(updateExpenses));
 
         setExpenseData({
-            date: new Date().toISOString().substring(0, 10),
+            ...expenseData,
             amount: '',
             memo: '',
-            selectedCategory: '',
-            color: '',
         });
     };
 
