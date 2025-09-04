@@ -7,10 +7,13 @@ import { CATEGORY_COLORS } from './category_colors';
 
 import { IoTrashBin } from 'react-icons/io5';
 import { IoAddCircleSharp, IoColorPaletteSharp } from "react-icons/io5";
+import { MdModeEdit } from "react-icons/md";
 
 export default function CategoryForm({ categories, setCategories, expenseData, setExpenseData }) {
     const [categoryName, setCategoryName] = useState('');
     const [placeholder, setPlaceholder] = useState('新規カテゴリー')
+
+    const [editingCategory, setEditingCategory] = useState('');
     const [editingColorId, setEditingColorId] = useState(null);
 
     /**
@@ -21,6 +24,16 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
         setCategoryName(event.target.value);
     }
 
+    /**
+     * カテゴリ名編集入力フォームの変更時
+     * @param {ChangeEvent<HTMLInputElement>} event - Input要素の変更イベント
+     */
+    const handleEditChange = (event) => {
+        setEditingCategory({
+            ...editingCategory,
+            name: event.target.value,
+        })
+    }
 
     /**
      * 入力フォームクリック時、placeholderを非表示
@@ -45,6 +58,38 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
                 saveCategoryInLocalStorage();
             }
         }
+    }
+
+    /**
+     * 編集したカテゴリー名を保存
+     * @param {string} categoryId - 編集中ID
+     */
+    const handleSaveEdit = (categoryId) => {
+        if (!editingCategory?.name) return;
+
+        const updatedCategories = categories.map(cat =>
+            cat.id === categoryId ? { ...cat, name: editingCategory.name } : cat,
+        );
+        setCategories(updatedCategories);
+        localStorage.setItem('categories', JSON.stringify(updatedCategories));
+        setEditingCategory(['']);
+    }
+    
+    /**
+     * 新しいカテゴリを生成し、ローカルストレージとstateの両方を更新
+     * state更新時、UIが自動的に再描画
+     */
+    function saveCategoryInLocalStorage() {
+        const newCategory = {
+            id: Date.now().toString(),
+            name: categoryName,
+            color: CATEGORY_COLORS[categories.length % CATEGORY_COLORS.length],
+        };
+
+        const updatedCategories = [...categories, newCategory];
+        setCategories(updatedCategories);
+        localStorage.setItem('categories', JSON.stringify(updatedCategories));
+        setCategoryName('')
     }
 
     /**
@@ -105,26 +150,6 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
         }
     };
 
-    /**
-     * 新しいカテゴリを生成し、ローカルストレージとstateの両方を更新
-     * state更新時、UIが自動的に再描画
-     */
-    function saveCategoryInLocalStorage() {
-        const newCategory = {
-            id: Date.now().toString(),
-            name: categoryName,
-            color: CATEGORY_COLORS[categories.length % CATEGORY_COLORS.length],
-        };
-
-        const existingCategories = JSON.parse(localStorage.getItem('categories')) || [];
-        const updatedCategories = [...existingCategories, newCategory];
-        setCategories(updatedCategories);
-
-        localStorage.setItem('categories', JSON.stringify(updatedCategories));
-
-        setCategoryName('')
-    }
-
     return (
         <div className={styles.formContainer}>
             <div className={styles.categoryList}>
@@ -134,7 +159,8 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
                         <li
                             className={
                                 `${styles.category}
-                                ${expenseData.selectedCategory === category.name ? styles.selected : ''}`
+                                ${expenseData.selectedCategory === category.name ? styles.categorySelected : ''}
+                                ${editingColorId === category.id ? styles.categoryOpen : ''}`
                             }
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -147,10 +173,37 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
                             }}
                         >
                             <div className={styles.categoryDetails}>
-                                <div className={styles.categoryName}>
-                                    {category.name}
-                                </div>
+                                {editingCategory && editingCategory.id === category.id ? (
+                                    <input
+                                        className={styles.editInput}
+                                        type="text"
+                                        value={editingCategory.name}
+                                        onChange={handleEditChange}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                handleSaveEdit(category.id);
+                                            }
+                                        }}
+                                        onBlur={() => handleSaveEdit(category.id)}
+                                        autoFocus
+                                    />
+                                ) : (
+                                    <div className={styles.categoryName}>
+                                        {category.name}
+                                    </div>
+                                )}
                                 <div className={styles.categoryIcons}>
+                                    <MdModeEdit
+                                        className={styles.Icon}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditingCategory(
+                                                editingCategory.id === category.id ?
+                                                '' :
+                                                { id: category.id, name: category.name }
+                                            );
+                                        }}
+                                    />
                                     <IoColorPaletteSharp
                                         className={styles.Icon}
                                         onClick={(e) => {
@@ -167,15 +220,16 @@ export default function CategoryForm({ categories, setCategories, expenseData, s
                                     />
                                 </div>
                             </div>
-                            {editingColorId === category.id && (
-                                <div className={`${styles.colorPickerContainer} ${editingColorId === category.id ? styles.visible : ''}`}>
-                                    <SwatchesPicker
-                                        color={category.color}
-                                        onChange={(newColor) => handleColorChange(category.id, newColor)}
-                                        presetColors={CATEGORY_COLORS}
-                                    />
-                                </div>
-                            )}
+                            <div
+                                className={`${styles.colorPickerContainer}
+                                            ${editingColorId === category.id ? styles.pickerOpen : ''}`}
+                            >
+                                <SwatchesPicker
+                                    color={category.color}
+                                    onChange={(newColor) => handleColorChange(category.id, newColor)}
+                                    presetColors={CATEGORY_COLORS}
+                                />
+                            </div>
                         </li>
                     ))}
                     <li className={styles.register}>

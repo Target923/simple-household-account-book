@@ -39,19 +39,27 @@
     border: 3px solid limegreen;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
 
-    width: 100%;
+    width: auto;
     font-size: 1.5em;
+    cursor: pointer;
 
-    transition: transform 0.1s ease;
+    grid-template-rows: 0fr;
+    height: 50px;
+
+    interpolate-size: allow-keywords;
+
+    transition: transform 0.1s ease, height 0.3s ease-in-out;
 }
 .category:hover {
     transform: translateY(-5px);
     box-shadow: 0 7px 5px rgba(0, 0, 0, 0.75);
-    cursor: pointer;
 }
-.selected {
+.categorySelected {
     background-color: lime;
-    color: gold;
+    color: black;
+}
+.categoryOpen {
+    height: auto;
 }
 
 .categoryDetails {
@@ -59,11 +67,13 @@
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 5px;
+    width: 100%;
 }
 
 .categoryName {
     flex-grow: 1;
+
+    white-space: nowrap;
 }
 
 .categoryIcons {
@@ -80,15 +90,19 @@
     flex-direction: column;
     margin-left: auto;
     margin-right: auto;
+    margin-top: 5px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.75);
 
-    height: 0;
-    overflow: hidden;
-    transition: height 0.5s ease-in-out;
-    width: 100%;
+    visibility: hidden;
+    opacity: 0;
+
+    transition: 0.1s opacity ease-out;
 }
-.colorPickerContainer.visible {
-    height: 100px;
+.pickerOpen {
+    visibility: visible;
+    opacity: 1;
+
+    transition: 0.3s opacity ease-in 0.15s;
 }
 
 .Icon {
