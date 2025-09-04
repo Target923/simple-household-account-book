@@ -65,10 +65,16 @@ export default function CategoryForm({ categories, setCategories, expenses, setE
      * @param {string} categoryId - 編集中ID
      */
     const handleSaveEdit = (categoryId, categoryName) => {
-        if (!editingCategory?.name) return;
+        if (!editingCategory?.name) {
+            setEditingCategory('');
+            return;
+        }
 
         const isCategoryExists = categories.some(cat => cat.name === editingCategory.name);
-        if (isCategoryExists) return;
+        if (isCategoryExists) {
+            setEditingCategory('');
+            return
+        };
 
         const updatedCategories = categories.map(cat =>
             cat.id === categoryId ? { ...cat, name: editingCategory.name } : cat,
@@ -127,9 +133,11 @@ export default function CategoryForm({ categories, setCategories, expenses, setE
      * @param {string} categoryName - 選択中カテゴリ
      */
     function handleDelete(categoryId, categoryName) {
-        const updatedCategories = categories.filter(cat => cat.id !== categoryId);
-        setCategories(updatedCategories);
-        localStorage.setItem('categories', JSON.stringify(updatedCategories));
+        if (confirm(`${categoryName}を削除しますか？`)) {
+            const updatedCategories = categories.filter(cat => cat.id !== categoryId);
+            setCategories(updatedCategories);
+            localStorage.setItem('categories', JSON.stringify(updatedCategories));
+        }
 
         const existingBudgets = JSON.parse(localStorage.getItem('budgets')) || []
         const updatedBudgets = existingBudgets.filter(budget => budget.categoryName !== categoryName);
