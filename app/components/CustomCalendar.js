@@ -72,7 +72,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
     const handleStartEdit = (expense) => {
         setEditingExpenseId(expense.id);
         setEditingExpenseData({
-            amount: expense.amount.toISOString(),
+            amount: expense.amount.toString(),
             memo: expense.memo,
             selectedCategoryName: expense.selectedCategoryName,
         });
@@ -400,6 +400,106 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
         return [];
     };
 
+    /**
+     * 支出一覧項目の描画関数
+     * @param {object} exp - 支出データ
+     * @returns {JSX.Element} 支出項目のJSX
+     */
+    const renderExpenseItem = (exp) => {
+        const isEditing = editingExpenseId === exp.id;
+
+        if (isEditing) {
+            return (
+                <li
+                    key={exp.id}
+                    className={styles.ditailsItem}
+                    style={{
+                        backgroundColor: categoryColors[editingExpenseData.selectedCategoryName] || '#555',
+                    }}
+                >
+                    <div className={styles.editForm}>
+                        <div className={styles.editRow}>
+                            <select
+                                value={editingExpenseData.selectedCategoryName}
+                                onChange={(e) => handleEditChange('selectedCategoryName', e.target.value)}
+                                className={styles.editCategorySelect}
+                            >
+                                <option value="">カテゴリー選択</option>
+                                {categories.map(category => (
+                                    <option key={category.id} value={category.name}>
+                                        {category.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className={styles.editRow}>
+                            <input
+                                type="number"
+                                value={editingExpenseData.amount}
+                                onChange={(e) => handleEditChange('amount', e.target.value)}
+                                placeholder='金額'
+                                className={styles.editAmountInput}
+                            />
+                            <span>円</span>
+                        </div>
+                        <div className={styles.editRow}>
+                            <input
+                                type="text"
+                                value={editingExpenseData.memo}
+                                onChange={(e) => handleEditChange('memo', e.target.value)}
+                                placeholder='メモ'
+                                className={styles.editMemoInput}
+                            />
+                        </div>
+                        <div className={styles.editButtons}>
+                            <button
+                                onClick={() => handleSaveEdit(exp.id)}
+                                className={styles.saveButton}
+                            >
+                                保存
+                            </button>
+                            <button
+                                onClick={() => handleCancelEdit}
+                                className={styles.cancelButton}
+                            >
+                                キャンセル
+                            </button>
+                        </div>
+                    </div>
+                </li>
+            );
+        } else {
+            return (
+                <li
+                    key={exp.id}
+                    className={`${styles.detailsItem} draggable-expense`}
+                    style={{
+                        backgroundColor: categoryColors[exp.selectedCategoryName] || '#555',
+                    }}
+                    data-expense={JSON.stringify(exp)}
+                >
+                    <div className={styles.detailsItemLeft}>
+                        <p>{exp.selectedCategoryName}&nbsp;</p>
+                        <p className={styles.memo}>{exp.memo}</p>
+                    </div>
+                    <div className={styles.detailsItemRight}>
+                        <p>{exp.amount}円&nbsp;</p>
+                        <IoCreate
+                            className={styles.editButton}
+                            onClick={() => handleStartEdit(exp)}
+                            title="編集"
+                        />
+                        <IoTrashBin
+                            className={styles.deleteButton}
+                            onClick={() => handleDeleteExpense(exp.id)}
+                            title="削除"
+                        />
+                    </div>
+                </li>
+            );
+        }
+    };
+
     return (
         <div className={styles.mainContainer}>
             <div className={styles.calendarContainer}>
@@ -435,29 +535,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                     </h3>
                 )}
                 <ul className={styles.detailsList}>
-                    {selectedDateExpenses.map(exp => (
-                        <li
-                            key={exp.id}
-                            className={`${styles.detailsItem} draggable-expense`}
-                            style={{
-                                backgroundColor: categoryColors[exp.selectedCategoryName] || '#ccc',
-                            }}
-                            data-expense={JSON.stringify(exp)}
-                        >
-                            <div className={styles.detailsItemLeft}>
-                                <p>{exp.selectedCategoryName}&nbsp;</p>
-                                <p className={styles.memo}>
-                                    {exp.memo}</p>
-                            </div>
-                            <div className={styles.detailsItemRight}>
-                                <p>{exp.amount}円&nbsp;</p>
-                                <IoTrashBin
-                                    className={styles.deleteButton}
-                                    onClick={() => handleDeleteExpense(exp.id)}
-                                />
-                            </div>
-                        </li>
-                    ))}
+                    {selectedDateExpenses.map(exp => renderExpenseItem(exp))}
                 </ul>
             </div>
         </div>
