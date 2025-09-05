@@ -50,19 +50,18 @@
 
     resize: none;
 
-
     height: 40px;
     padding: 5px;
 }
 
-.registerBtn {
+.button {
     width: 50%;
     margin: 10px auto;
     cursor: pointer;
     text-align: center;
 }
 
-.registerBtn:hover {
+.button:hover {
     transform: scale(1.05);
 }
 

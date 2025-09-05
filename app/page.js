@@ -7,7 +7,7 @@ import ExpenseForm from "./components/ExpenseForm";
 import CustomCalendar from "./components/CustomCalendar";
 import ExpenseChart from "./components/ExpenseChart";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
 /**
  * 家計簿アプリケーションのメインコンポーネント
@@ -45,6 +45,18 @@ export default function Home() {
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   /**
+   * 編集中の支出データ管理state
+   * @type {[object|null, React.Dispatch<React.SetStateAction<object|null>>]}
+   */
+  const [editingExpense, setEditingExpense] = useState(null);
+
+  /**
+   * 編集モードフラグ管理state
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  /**
    * コンポーネントマウント時、ローカルストレージからデータ読み込み
    */
   useEffect(() => {
@@ -76,16 +88,21 @@ export default function Home() {
       <CategoryForm
         categories={categories} setCategories={setCategories}
         expenses={expenses} setExpenses={setExpenses} 
-        expenseData={expenseData} setExpenseData={setExpenseData }/>
+        expenseData={expenseData} setExpenseData={setExpenseData }
+        editingExpense={editingExpense} setEditingExpense={setEditingExpense}
+        isEditMode={isEditMode} setIsEditMode={setIsEditMode} />
       <ExpenseForm 
         categories={categories}
-        setExpenses={setExpenses}
+        expenses={expenses} setExpenses={setExpenses}
         expenseData={expenseData} setExpenseData={setExpenseData}
-        selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
+        selectedDate={selectedDate} setSelectedDate={setSelectedDate}
+        editingExpense={editingExpense} setEditingExpense={setEditingExpense}
+        isEditMode={isEditMode} setIsEditMode={setIsEditMode} />
       <CustomCalendar
         expenses={expenses} setExpenses={setExpenses}
         categories={categories}
-        selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
+        selectedDate={selectedDate} setSelectedDate={setSelectedDate}
+        setEditingExpense={setEditingExpense} setIsEditMode={setIsEditMode} />
       <ExpenseChart
         expenses={expenses}
         setExpenses={setExpenses}

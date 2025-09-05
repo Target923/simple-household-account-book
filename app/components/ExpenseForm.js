@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 
 import styles from './ExpenseForm.module.css'
 
-export default function ExpenseForm({ categories, setExpenses, expenseData, setExpenseData, selectedDate, setSelectedDate }) {
+export default function ExpenseForm({ categories, expenses, setExpenses, expenseData, setExpenseData, selectedDate, setSelectedDate, editingExpense, setEditingExpense, isEditMode, setIsEditMode }) {
     const textareaRef = useRef(null);
 
     /**
@@ -23,6 +23,23 @@ export default function ExpenseForm({ categories, setExpenses, expenseData, setE
             }));
         }
     }, [selectedDate, setExpenseData]);
+
+    /**
+     * 編集モード時に編集データをフォームに設定
+     */
+    useEffect(() => {
+        if (isEditMode && editingExpense) {
+            setExpenseData({
+                date: editingExpense.date,
+                amount: editingExpense.amount.toString(),
+                memo: editingExpense.memo,
+                selectedCategory: editingExpense.selectedCategoryName,
+                color: editingExpense.color,
+            });
+
+            setSelectedDate(new Date(editingExpense.date));
+        }
+    }, [isEditMode, editingExpense, setExpenseData, setSelectedDate]);
     
     /**
      * 各入力項目の変更時、expenseDataの状態を更新
@@ -68,7 +85,7 @@ export default function ExpenseForm({ categories, setExpenses, expenseData, setE
             }
         }
 
-        saveExpenseDataInLocalStorage();
+        isEditMode ? updateExpenseDataInLocalStorage() : saveExpenseDataInLocalStorage();
     }
 
     /**
@@ -101,6 +118,39 @@ export default function ExpenseForm({ categories, setExpenses, expenseData, setE
             memo: '',
         });
     };
+
+    function updateExpenseDataInLocalStorage() {
+        const selectedCategoryObject = categories.find(cat => cat.name === expenseData.selectedCategory);
+        const categoryName = selectedCategoryObject ? selectedCategoryObject.name : 'No Category';
+
+        const updatedExpenseData = {
+            ...editingExpense,
+            date: expenseData.date,
+            amount: Number(expenseData.amount) || 0,
+            memo: expenseData.memo,
+            selectedCategory: expenseData.selectedCategory,
+            selectedCategoryName: categoryName,
+            color: expenseData.color,
+        };
+
+        const updatedExpenses = expenses.map(exp =>
+            exp.id === editingExpense.id ? updatedExpenseData : exp,
+        );
+
+        setExpenses(updatedExpenses);
+        localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
+
+        setIsEditMode(false);
+        setEditingExpense(null);
+
+        setExpenseData({
+            date: new Date(),
+            amount: '',
+            memo: '',
+            selectedCategory: '',
+            color: '',
+        });
+    }
 
     /**
      * EnterKey押下時にフォーカスを外す
@@ -155,11 +205,29 @@ export default function ExpenseForm({ categories, setExpenses, expenseData, setE
             </ul>
             <div>
                 <div
-                    className={`${styles.formItem} ${styles.registerBtn}`}
+                    className={`${styles.formItem} ${styles.button}`}
                     onClick={handleSave}
                 >
-                    この内容で登録する
+                    {isEditMode ? 'この内容で更新する' : 'この内容で登録する'}
                 </div>
+                {isEditMode && (
+                    <div
+                        className={`${styles.formItem} ${styles.button}`}
+                        onClick={() => {
+                            setIsEditMode(false);
+                            setEditingExpense(null),
+                            setExpenseData({
+                                date: new Date(),
+                                amount: '',
+                                memo: '',
+                                selectedCategory: '',
+                                color: '',
+                            });
+                        }}
+                    >
+                        編集をキャンセル
+                    </div>
+                )}
             </div>
         </div>
     )

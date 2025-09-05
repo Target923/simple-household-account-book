@@ -45,6 +45,9 @@
 }
 
 .detailsItem {
+    display: flex;
+    flex-direction: column;
+
     background-color: lime;
     border: 2px solid silver;
     border-radius: 4px;
@@ -52,14 +55,17 @@
     color: black;
     list-style-type: none;
 
-    display: flex;
-    justify-content: space-between;
-
     transition: transform 0.05s ease-in;
 }
 .detailsItem:hover {
     transform: scale(1.05);
     cursor: default;
+}
+
+.detailsExpense {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
 }
 
 .detailsItemLeft {
@@ -77,13 +83,14 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.deleteButton {
+.Button {
     cursor: pointer;
     color: rgb(50, 50, 50);
+    font-size: 1.15em;
 
     transition: color 0.2s ease;
 }
-.deleteButton:hover {
+.Button:hover {
     color: red;
 }
 

@@ -9,7 +9,7 @@ import { IoTrashBin } from 'react-icons/io5';
 import { IoAddCircleSharp, IoColorPaletteSharp } from "react-icons/io5";
 import { MdModeEdit } from "react-icons/md";
 
-export default function CategoryForm({ categories, setCategories, expenses, setExpenses, expenseData, setExpenseData }) {
+export default function CategoryForm({ categories, setCategories, expenses, setExpenses, expenseData, setExpenseData, editingExpense, setEditingExpense, isEditMode, setIsEditMode }) {
     const [categoryName, setCategoryName] = useState('');
     const [placeholder, setPlaceholder] = useState('新規カテゴリー')
 
@@ -120,6 +120,16 @@ export default function CategoryForm({ categories, setCategories, expenses, setE
     function handleClickCategory(categoryName) {
         const currentColor = categories.find(cat => cat.name === categoryName).color;
 
+        if (isEditMode && editingExpense) {
+            const updatedExpense = {
+                ...editingExpense,
+                selectedCategory: categoryName,
+                selectedCategoryName: categoryName,
+                color: currentColor,
+            }
+            setEditingExpense(updatedExpense);
+        }
+
         setExpenseData(prevExpenseData => ({
             ...prevExpenseData,
             selectedCategory: categoryName,
@@ -174,7 +184,7 @@ export default function CategoryForm({ categories, setCategories, expenses, setE
     };
 
     return (
-        <div className={styles.formContainer}>
+        <div className={styles.formContainer} data-category-form>
             <div className={styles.categoryList}>
                 <h2>カテゴリー選択</h2>
                 <ul className={styles.categories}>
@@ -182,7 +192,9 @@ export default function CategoryForm({ categories, setCategories, expenses, setE
                         <li
                             className={
                                 `${styles.category}
-                                ${expenseData.selectedCategory === category.name ? styles.categorySelected : ''}
+                                ${(expenseData.selectedCategory === category.name ||
+                                    (isEditMode && editingExpense?.selectedCategoryName === category.name)) ?
+                                    styles.categorySelected : ''}
                                 ${editingColorId === category.id ? styles.categoryOpen : ''}`
                             }
                             onClick={(e) => {
@@ -194,7 +206,9 @@ export default function CategoryForm({ categories, setCategories, expenses, setE
                                 borderColor: category.color,
                                 borderTopColor: `${category.color}90`,
                                 borderLeftColor: `${category.color}90`,
-                                backgroundColor: expenseData.selectedCategory === category.name ? `${category.color}95` : 'transparent'
+                                backgroundColor: (expenseData.selectedCategory === category.name ||
+                                (isEditMode && editingExpense?.selectedCategoryName === category.name)) ?
+                                `${category.color}95` : 'transparent'
                             }}
                         >
                             <div className={styles.categoryDetails}>
@@ -228,6 +242,7 @@ export default function CategoryForm({ categories, setCategories, expenses, setE
                                                 { id: category.id, name: category.name }
                                             );
                                         }}
+                                        title='編集'
                                     />
                                     <IoColorPaletteSharp
                                         className={styles.Icon}
@@ -235,6 +250,7 @@ export default function CategoryForm({ categories, setCategories, expenses, setE
                                             e.stopPropagation(); // 親要素のonClickイベント無効化
                                             setEditingColorId(editingColorId === category.id ? null : category.id);
                                         }}
+                                        title='カラーパレット'
                                     />
                                     <IoTrashBin
                                         className={styles.Icon}
@@ -242,6 +258,7 @@ export default function CategoryForm({ categories, setCategories, expenses, setE
                                             e.stopPropagation();
                                             handleDelete(category.id, category.name);
                                         }}
+                                        title='削除'
                                     />
                                 </div>
                             </div>
