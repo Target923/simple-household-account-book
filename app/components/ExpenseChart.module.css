@@ -12,6 +12,11 @@
     font-size: 1.5em;
 }
 
+.notBudgetMessage {
+    padding: 5px;
+    font-size: 1.2em;
+}
+
 .budgetsList {
     flex-basis: 50%;
     height: 75vh;

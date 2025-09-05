@@ -308,10 +308,11 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
      */
     const applyDateCellClassName = (arg) => {
         if (selectedDate && arg.date) {
-            const selectedDateStr = selectedDate.toISOString().split('T')[0];
-            const cellDateStr = arg.date.toISOString().split('T')[0];
+            const isSameDay = selectedDate.getFullYear() === arg.date.getFullYear() &&
+                                selectedDate.getMonth() === arg.date.getMonth() &&
+                                selectedDate.getDate() === arg.date.getDate();
 
-            if (selectedDateStr === cellDateStr) {
+            if (isSameDay) {
                 return [styles['is-selected-date']];
             }
         }

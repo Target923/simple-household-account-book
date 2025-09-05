@@ -141,6 +141,13 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
         return `${year}-${month}`;
     }, [selectedDate]);
 
+    const currentDate = useMemo(() => {
+        const year = selectedDate.getFullYear();
+        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const date = String(selectedDate.getDate()).padStart(2, '0');
+        return `${year}-${month}-${date}`;
+    }, [selectedDate]);
+
     /**
      * 予算設定/更新関数
      * @param {string} categoryId - カテゴリID
@@ -231,7 +238,7 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
     const renderBudgetChart = () => {
         if (budgetChartData.length === 0) {
             return (
-                <div>
+                <div className={styles.notBudgetMessage}>
                     <p>予算が設定されていません</p>
                 </div>
             );
@@ -547,7 +554,7 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
             <div ref={pieChartRef} className={styles.pieChart}>
                 <div className={styles.chartTitleContainer}>
                     <h3 className={styles.graphTitle}>
-                        支出内訳: {displayMode === 'day' ? selectedDate.toISOString().substring(0, 10) : currentMonth}
+                        支出内訳: {displayMode === 'day' ? currentDate : currentMonth}
                     </h3>
                     <div
                         className={styles.toggleButton}
