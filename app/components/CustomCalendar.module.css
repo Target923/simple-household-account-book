@@ -98,3 +98,35 @@
     background-color: rgb(127, 255, 212, 0.2) !important;
     /* border: 2px solid gold !important; */
 }
+
+.memoSection {
+    overflow: hidden;
+    transition: max-height 0.2s ease, opacity 0.2s ease;
+    margin-top: 2px;
+}
+
+.memoCollapsed {
+    max-height: 0;
+    opacity: 0;
+}
+.memoExpanded {
+    max-height: 200px;
+    opacity: 1;
+}
+
+.memoContent {
+    padding: 4px 8px;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+
+.memoContent p {
+    margin: 0;
+    font-size: 0.85em;
+    line-height: 1.4;
+    word-wrap: break-word;
+}
+
+.detailsItem:hover .memoIndicator {
+    color: #333;
+}

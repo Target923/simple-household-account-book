@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 
 import styles from './CustomCalendar.module.css';
 
@@ -22,6 +22,12 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
      * @type {[Array<object>, React.Dispatch<React.SetStateAction<Array>>]}
      */
     const [selectedDateExpenses, setSelectedDateExpenses] = useState([]);
+
+    /**
+     * 展開中の支出ID管理state
+     * @type {[string|null, React.Dispatch<React.SetStateAction<string|null>>]}
+     */
+    const [expandedExpenseId, setExpandedExpenseId] = useState(null);
 
     const calendarRef = useRef(null);
     const externalEventRef = useRef(null);
@@ -320,39 +326,66 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
     };
 
     /**
+     * アコーディオンの開閉制御
+     * @param {string} expenseId - 支出Id
+     */
+    const handleToggleExpanded = (expenseId) => {
+        setExpandedExpenseId(expandedExpenseId === expenseId ? null : expenseId);
+    };
+
+    /**
      * 支出一覧項目の描画関数
      * @param {object} exp - 支出データ
      * @returns {JSX.Element} 支出項目のJSX
      */
     const renderExpenseItem = (exp) => {
+        const isExpanded = expandedExpenseId === exp.id;
+        const hasMemo = exp.memo && exp.memo.trim() !== '';
+
         return (
             <li
                 key={exp.id}
-                className={`${styles.detailsItem} draggable-expense`}
+                className={`${styles.detailsItem} draggable-expense ${isExpanded ? styles.Expanded : ''}`}
+                onClick={() => hasMemo && handleToggleExpanded(exp.id)}
                 style={{
                     backgroundColor: categoryColors[exp.selectedCategoryName] || '#555',
+                    cursor: hasMemo ? 'pointer' : 'default'
                 }}
                 data-expense={JSON.stringify(exp)}
+                title={!isExpanded && hasMemo ? 'メモを見る' : ''}
             >
                 <div className={styles.detailsExpense}>
                     <div className={styles.detailsItemLeft}>
                         <p>{exp.selectedCategoryName}&nbsp;</p>
-                        {/* <p className={styles.memo}>{exp.memo}</p> */}
                     </div>
                     <div className={styles.detailsItemRight}>
                         <p>{exp.amount}円&nbsp;</p>
                         <IoCreate
                             className={styles.Button}
-                            onClick={() => handleStartEdit(exp)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleStartEdit(exp)
+                            }}
                             title="編集"
                         />
                         <IoTrashBin
                             className={styles.Button}
-                            onClick={() => handleDeleteExpense(exp.id)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteExpense(exp.id)
+                            }}
                             title="削除"
                         />
                     </div>
                 </div>
+
+                {hasMemo && (
+                    <div className={`${styles.memoSection} ${isExpanded ? styles.memoExpanded : styles.memoCollapsed}`}>
+                        <div className={styles.memoContent}>
+                            <p>{exp.memo}</p>
+                        </div>
+                    </div>
+                )}
             </li>
         );
     };
