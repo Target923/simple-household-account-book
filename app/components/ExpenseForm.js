@@ -152,16 +152,6 @@ export default function ExpenseForm({ categories, expenses, setExpenses, expense
         });
     }
 
-    /**
-     * EnterKey押下時にフォーカスを外す
-     * @param {*} event 
-     */
-    const handleKeyDown = (event) => {
-        if (event.key === 'Enter') {
-            te.current.blur();
-        }
-    };
-
     return (
         <div className={styles.formInput}>
             <ul className={styles.formContainer}>
@@ -199,7 +189,6 @@ export default function ExpenseForm({ categories, expenses, setExpenses, expense
                         name='memo'
                         value={expenseData.memo}
                         onChange={handleChange}
-                        onKeyDown={handleKeyDown}
                     />
                 </li>
             </ul>

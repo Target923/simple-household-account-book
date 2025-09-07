@@ -24,6 +24,16 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
     const [selectedDateExpenses, setSelectedDateExpenses] = useState([]);
 
     /**
+     * フィルタリング用state
+     */
+    // const [filterType, setFilterType] = useState('total');
+    // const [categoryFilter, setCategoryFilter] = useState(null);
+    const [displayFilter, setDisplayFilter] = useState({
+        type: 'total',
+        categoryName: null,
+    });
+
+    /**
      * 展開中の支出ID管理state
      * @type {[string|null, React.Dispatch<React.SetStateAction<string|null>>]}
      */
@@ -31,6 +41,21 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
 
     const calendarRef = useRef(null);
     const externalEventRef = useRef(null);
+    
+    /**
+     * 日付文字列をISO形式に変換するユーティリティ関数
+     * @param {string | Date} dateValue - 日付/日付文字列
+     * @returns {string} YYYY-MM-DD形式の日付文字列
+     */
+    const getISODateString = (dateValue) => {
+        if (!dateValue) return '';
+        const date = new Date(dateValue);
+        if (isNaN(date.getTime())) return '';
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
 
     /**
      * カテゴリのカラーマップ管理Memo
@@ -42,18 +67,6 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
             return acc;
         }, {});
     }, [categories]);
-
-    /**
-     * 日付文字列をISO形式に変換するユーティリティ関数
-     * @param {string | Date} dateValue - 日付/日付文字列
-     * @returns {string} YYYY-MM-DD形式の日付文字列
-     */
-    const getISODateString = (dateValue) => {
-        if (dateValue instanceof Date) {
-            return dateValue.toISOString().split('T')[0];
-        }
-        return dateValue.split('T')[0];
-    };
 
     /**
      * 支出編集開始ハンドラ
@@ -71,6 +84,27 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
             });
         }
     };
+
+    /**
+     * 支出リスト自動更新
+     */
+    useEffect(() => {
+        if (!selectedDate) return;
+
+        const selectedDateStr = getISODateString(selectedDate);
+        const updatedList = expenses.filter( exp => {
+            const expenseDateStr = getISODateString(exp.date);
+
+            if (expenseDateStr !== selectedDateStr) return false;
+
+            if (displayFilter.type === 'category' && displayFilter.categoryName) {
+                return exp.selectedCategoryName === displayFilter.categoryName;
+            }
+
+            return true;
+        });
+        setSelectedDateExpenses(updatedList);
+    }, [expenses, selectedDate, displayFilter]);
 
     /**
      * 合計/支出データを統合し、FullCalendarイベント形式に変換
@@ -149,7 +183,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
      * @param {object} eventDropInfo - ドラッグ&ドロップイベント情報
      */
     const handleEventDrop = (eventDropInfo) => {
-        if (eventDropInfo.event.extendedProps.eventType === 'expense') {
+        if (eventDropInfo.event.extendedProps.eventType === 'total') {
             const newDate = eventDropInfo.event.startStr;
             const eventExpenseIds = eventDropInfo.event.extendedProps.ids;
 
@@ -186,7 +220,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                             id: crypto.randomUUID(),
                             title: `${data.selectedCategoryName}: ${data.amount}円`,
                             editable: true,
-                            eventType: 'expense',
+                            eventType: 'total',
                         };
                     } catch (e) {
                         console.error('Failed to parse event data:', e);
@@ -220,8 +254,6 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
 
         setExpenses(updatedExpenses);
         localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
-
-        setSelectedDateExpenses(prev => prev.filter(exp => exp.id !== originalId));
     }
 
     /**
@@ -232,6 +264,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
     const handleDateClick = (dateClickInfo) => {
         const clickedDate = dateClickInfo.date;
         setSelectedDate(clickedDate);
+        setDisplayFilter({ type: 'all', category: null });
     }
 
     /**
@@ -240,25 +273,17 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
      */
     const handleEventClick = (eventClickInfo) => {
         const clickedEvent = eventClickInfo.event;
-        const clickedDate = clickedEvent.startStr;
         const eventType = clickedEvent.extendedProps.eventType;
-        const eventId = clickedEvent.id;
 
-        let expensesToDisplay = [];
+        setSelectedDate(clickedEvent.start);
 
-        if (eventType === 'total') {
-            expensesToDisplay = expenses.filter(
-                exp => getISODateString(exp.date) === clickedDate
-            );
-        } else if (eventType === 'category') {
-            expensesToDisplay = expenses.filter(
-                exp => getISODateString(exp.date) === clickedDate &&
-                    `${getISODateString(exp.date)}-${exp.selectedCategoryName}` === eventId
-            );
+        if (eventType === 'category') {
+            const categoryName = clickedEvent.title.split(':')[0].trim();
+            setDisplayFilter({ type: 'category', categoryName: categoryName })
+        } else {
+            setDisplayFilter({ type: 'total', categoryName: null });
         }
 
-        setSelectedDateExpenses(expensesToDisplay);
-        setSelectedDate(clickedEvent.start);
     };
 
     /**
@@ -269,12 +294,6 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
         const updatedExpenses = expenses.filter(exp => exp.id !== expenseId);
         setExpenses(updatedExpenses);
         localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
-
-        const newSelectedExpenses = updatedExpenses.filter(
-            exp => getISODateString(exp.date) ===
-                getISODateString(selectedDateExpenses[0]?.date)
-        );
-        setSelectedDateExpenses(newSelectedExpenses);
     };
 
     /**
