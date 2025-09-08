@@ -98,7 +98,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
             if (expenseDateStr !== selectedDateStr) return false;
 
             if (displayFilter.type === 'category' && displayFilter.categoryName) {
-                return exp.selectedCategoryName === displayFilter.categoryName;
+                return exp.selectedCategoryName.substring(0, 2) === displayFilter.categoryName;
             }
 
             return true;
@@ -151,7 +151,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
         }, {});
         const categoryTotalEvents = Object.values(categoryTotals).map(cat => ({
             id: cat.id,
-            title: `${cat.name}: ${cat.amount}円`,
+            title: `${cat.name.substring(0, 2)}: ${cat.amount}円`,
             date: getISODateString(cat.date),
             backgroundColor: cat.color,
             textColor: 'black',
@@ -309,7 +309,6 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                     borderColor: isTotal ? 'gold' : 'silver',
                     fontWeight: isTotal ? 'bold' : 'normal',
                     fontSize: isTotal ? '1.25em' : '1.1em',
-                    textAlign: isTotal ? 'center' : '',
                 }}
                 title={isTotal ? '内訳表示' : '詳細表示'}
             >

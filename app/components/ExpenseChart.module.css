@@ -81,13 +81,15 @@
 
 .budgetDetails input[type="number"] {
     border-width: 4px;
-    border-radius: 2px;
+    border-radius: 4px;
     padding: 5px;
     font-weight: bold;
-    width: 40%;
+    width: 25%;
+    outline: none;
 }
 .budgetDetails input[type="number"]::placeholder {
     color: azure;
+    opacity: 0.8;
 }
 
 .budgetDetailsButton {

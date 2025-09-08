@@ -26,13 +26,8 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     cursor: pointer;
-
-    transition: transform 0.05s ease-in;
+    text-align: center;
 }
-.events:hover {
-    transform: scale(1.05);
-}
-
 
 .detailsContainer {
     width: 0;

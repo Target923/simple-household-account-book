@@ -331,9 +331,16 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
                                     <div className={styles.budgetDetails}>
                                         <input
                                             type="number"
+                                            step={1000}
                                             value={budgetInputValue}
                                             onChange={(e) => setBudgetInputValue(e.target.value)}
                                             placeholder="予算額"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    handleSetBudget(category.id, category.name, Number(budgetInputValue))
+                                                }
+                                            }}
+                                            autoFocus
                                         />
                                         <div
                                             className={styles.budgetDetailsButton}

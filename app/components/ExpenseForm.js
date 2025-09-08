@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import styles from './ExpenseForm.module.css'
 
 export default function ExpenseForm({ categories, expenses, setExpenses, expenseData, setExpenseData, selectedDate, setSelectedDate, editingExpense, setEditingExpense, isEditMode, setIsEditMode }) {
-    const textareaRef = useRef(null);
+    const inputRef = useRef(null);
 
     /**
      * selectedDate変更時、expenseData.dateを更新し、同期
@@ -169,6 +169,7 @@ export default function ExpenseForm({ categories, expenses, setExpenses, expense
                     <label htmlFor='amount'>金額</label>
                     <input
                         type='number'
+                        step={100}
                         id='amount'
                         name='amount'
                         value={expenseData.amount}
@@ -178,17 +179,23 @@ export default function ExpenseForm({ categories, expenses, setExpenses, expense
                                 handleSave(e);
                             }
                         }}
+                        autoFocus
                     />
                 </li>
                 <li className={styles.formItem} style={{ backgroundColor: 'paleturquoise' }}>
                     <label htmlFor='memo'>メモ</label>
-                    <textarea
+                    <input
                         type='text'
-                        ref={textareaRef}
+                        ref={inputRef}
                         id='memo'
                         name='memo'
                         value={expenseData.memo}
                         onChange={handleChange}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                handleSave(e);
+                            }
+                        }}
                     />
                 </li>
             </ul>
