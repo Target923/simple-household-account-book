@@ -412,6 +412,9 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                         center: '',
                         right: 'today,prev,next',
                     }}
+                    buttonText={{
+                        today: '今日'
+                    }}
                     events={calendarEvents}
                     eventDisplay='block'
                     eventContent={renderEventContent}
