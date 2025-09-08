@@ -26,8 +26,6 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
     /**
      * フィルタリング用state
      */
-    // const [filterType, setFilterType] = useState('total');
-    // const [categoryFilter, setCategoryFilter] = useState(null);
     const [displayFilter, setDisplayFilter] = useState({
         type: 'total',
         categoryName: null,
@@ -157,7 +155,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                 direction: prev.field === field && prev.direction === 'desc' ? 'asc' : 'desc'
             }));
         };
-    }
+    };
 
     /**
      * 支出リストのドラッグ&ドロップハンドラ一覧
@@ -171,10 +169,34 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
     };
-    const handleExpenseDrop = (e) => {
+    const handleExpenseDrop = (e, dropIndex) => {
+        e.preventDefault();
+        e.stopPropagation();
         
-    }
+        if (draggedExpenseIndex === null || draggedExpenseIndex === dropIndex) {
+            return;
+        }
 
+        const newExpenses = [...selectedDateExpenses];
+        const draggedExpense = newExpenses[draggedExpenseIndex];
+
+        newExpenses.splice(draggedExpenseIndex, 1);
+        newExpenses.splice(dropIndex, 0, draggedExpense);
+
+        const updatedAllExpenses = expenses.map(exp => {
+            const foundIndex = newExpenses.findIndex(newExp => newExp.id === exp.id);
+            if (foundIndex !== -1) {
+                return { ...newExpenses[foundIndex], sortOrder: foundIndex };
+            }
+            return exp;
+        });
+
+        setExpenses(updatedAllExpenses);
+        localStorage.setItem('expenses', JSON.stringify(updatedAllExpenses));
+    };
+    const handleExpenseDragEnd = () => {
+        setDraggedExpenseIndex(null);
+    };
 
     /**
      * 合計/支出データを統合し、FullCalendarイベント形式に変換
