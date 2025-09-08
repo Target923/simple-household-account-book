@@ -1,11 +1,3 @@
-:root {
-    --fc-border-color: silver;
-
-    --fc-button-text-color: black;
-    --fc-button-bg-color: silver;
-    --fc-button-hover-bg-color: gold;
-}
-
 .mainContainer {
     margin: 0 10vw;
     margin-top: 20px;
@@ -22,6 +14,25 @@
 
     box-shadow: 12px 12px 0 rgba(0, 0, 0, 0.25);
 }
+
+.events{
+    color: black;
+    border: 1px solid;
+    padding: 2px 4px;
+    margin-bottom: 1px;
+    border-radius: 2px;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+
+    transition: transform 0.05s ease-in;
+}
+.events:hover {
+    transform: scale(1.05);
+}
+
 
 .detailsContainer {
     width: 0;

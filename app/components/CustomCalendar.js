@@ -120,10 +120,9 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
         }, {});
         const dailyTotalEvents = Object.keys(dailyTotals).map(date => ({
             id: `total-${date}`,
-            title: `合計: ${dailyTotals[date]}円`,
+            title: `${dailyTotals[date]}円`,
             date: date,
             backgroundColor: 'azure',
-            borderColor: 'gold',
             textColor: 'black',
             eventType: 'total',
             editable: false,
@@ -155,7 +154,6 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
             title: `${cat.name}: ${cat.amount}円`,
             date: getISODateString(cat.date),
             backgroundColor: cat.color,
-            borderColor: 'silver',
             textColor: 'black',
             eventType: 'category',
             editable: false,
@@ -283,7 +281,6 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
         } else {
             setDisplayFilter({ type: 'total', categoryName: null });
         }
-
     };
 
     /**
@@ -303,24 +300,19 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
     const renderEventContent = (eventInfo) => {
         const { event } = eventInfo;
         const isTotal = event.extendedProps.eventType === 'total';
-        const eventClass = isTotal ? 'event-total' : 'event-category';
 
         return (
-            <div className={`${styles[eventClass]}`} style={{
-                backgroundColor: isTotal ? 'azure' : event.backgroundColor,
-                color: 'black',
-                border: '1px solid',
-                borderColor: isTotal ? 'gold' : 'silver',
-                padding: '2px 4px',
-                marginBottom: '1px',
-                borderRadius: '4px',
-                display: 'block',
-                fontWeight: isTotal ? 'bold' : 'normal',
-                fontSize: isTotal ? '1.25em' : '1.1em',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-            }}>
+            <div
+                className={styles.events}
+                style={{
+                    backgroundColor: isTotal ? 'azure' : event.backgroundColor,
+                    borderColor: isTotal ? 'gold' : 'silver',
+                    fontWeight: isTotal ? 'bold' : 'normal',
+                    fontSize: isTotal ? '1.25em' : '1.1em',
+                    textAlign: isTotal ? 'center' : '',
+                }}
+                title={isTotal ? '内訳表示' : '詳細表示'}
+            >
                 {event.title}
             </div>
         );
@@ -371,7 +363,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                     cursor: hasMemo ? 'pointer' : 'default'
                 }}
                 data-expense={JSON.stringify(exp)}
-                title={!isExpanded && hasMemo ? 'メモを見る' : ''}
+                title={!isExpanded && hasMemo ? 'メモ確認' : ''}
             >
                 <div className={styles.detailsExpense}>
                     <div className={styles.detailsItemLeft}>
@@ -435,6 +427,9 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                     drop={handleDrop}
                     dayCellClassNames={applyDateCellClassName}
                     ref={calendarRef}
+                    eventDidMount={(info) => {
+                        info.el.style.border = 'none';
+                    }}
                 />
             </div>
             <div className={styles.detailsContainer} ref={externalEventRef}>
