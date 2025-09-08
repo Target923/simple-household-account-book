@@ -39,6 +39,21 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
      */
     const [expandedExpenseId, setExpandedExpenseId] = useState(null);
 
+    /**
+     * ソート設定管理state
+     * @type
+     */
+    const [sortConfig, setSortConfig] = useState({
+        field: 'date',
+        direction: 'desc',
+    });
+
+    /**
+     * ソート対象のインデックス
+     * @type
+     */
+    const [draggedExpenseIndex, setDraggedExpenseIndex] = useState(null);
+
     const calendarRef = useRef(null);
     const externalEventRef = useRef(null);
     
@@ -103,8 +118,63 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
 
             return true;
         });
+
+        updatedList.sort((a, b) => {
+            let aValue, bValue;
+
+            switch (sortConfig.field) {
+                case 'amount':
+                    aValue = Number(a.amount);
+                    bValue = Number(b.amount);
+                    break;
+                case 'category':
+                    aValue = a.selectedCategoryName;
+                    bValue = b.selectedCategoryName;
+                    break;
+                case 'date':
+                default:
+                    aValue = new Date(a.date).getTime();
+                    bValue = new Date(b.date).getTime();
+            }
+
+            if (sortConfig.direction === 'asc') {
+                return aValue > bValue ? 1 : -1;
+            } else {
+                return aValue < bValue ? 1 : -1;
+            }
+        });
+
         setSelectedDateExpenses(updatedList);
-    }, [expenses, selectedDate, displayFilter]);
+    }, [expenses, selectedDate, displayFilter, sortConfig]);
+
+    /**
+     * ソート切り替えUI
+     */
+    const renderSortControls = () => {
+        const handleSortChange = (field) => {
+            setSortConfig(prev => ({
+                field,
+                direction: prev.field === field && prev.direction === 'desc' ? 'asc' : 'desc'
+            }));
+        };
+    }
+
+    /**
+     * 支出リストのドラッグ&ドロップハンドラ一覧
+     */
+    const handleExpenseDragStart = (e, index) => {
+        setDraggedExpenseIndex(index);
+        e.dataTransfer.effectAllowed = 'move';
+        e.stopPropagation();
+    };
+    const handleExpenseDragOver = (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    };
+    const handleExpenseDrop = (e) => {
+        
+    }
+
 
     /**
      * 合計/支出データを統合し、FullCalendarイベント形式に変換
@@ -363,6 +433,11 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                 }}
                 data-expense={JSON.stringify(exp)}
                 title={!isExpanded && hasMemo ? 'メモ確認' : ''}
+                draggable={true}
+                onDragStart={(e) => handleExpenseDragStart(e, index)}
+                onDragOver={handleExpenseDragOver}
+                onDrop={(e) => handleExpenseDrop(e, index)}
+                onDragEnd={handleExpenseDragEnd}
             >
                 <div className={styles.detailsExpense}>
                     <div className={styles.detailsItemLeft}>
