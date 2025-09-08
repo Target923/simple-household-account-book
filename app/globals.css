@@ -1,12 +1,6 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  
-  /* --fc-border-color: silver;
-
-  --fc-button-text-color: black;
-  --fc-button-bg-color: silver;
-  --fc-button-hover-bg-color: gold; */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -64,11 +58,11 @@ a {
   color: #000;
 }
 
-.fc .fc-button{
+.fc .fc-button-primary{
   background-color: silver !important;
   color: black !important;
 }
-.fc .fc-button:hover {
+.fc .fc-button-primary:hover {
   background-color: gold !important;
   color: black !important;
 }
