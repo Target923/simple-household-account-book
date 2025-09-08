@@ -1,4 +1,5 @@
 'use client';
+import '../app/globals.css'
 import Image from "next/image";
 import { CATEGORY_COLORS } from "./components/category_colors";
 
