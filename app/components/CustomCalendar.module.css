@@ -1,11 +1,3 @@
-:root {
-    --fc-border-color: silver;
-
-    --fc-button-text-color: black;
-    --fc-button-bg-color: silver;
-    --fc-button-hover-bg-color: gold;
-}
-
 .mainContainer {
     margin: 0 10vw;
     margin-top: 20px;
