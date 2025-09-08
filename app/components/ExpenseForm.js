@@ -170,6 +170,7 @@ export default function ExpenseForm({ categories, expenses, setExpenses, expense
                     <input
                         type='number'
                         step={100}
+                        min={0}
                         id='amount'
                         name='amount'
                         value={expenseData.amount}

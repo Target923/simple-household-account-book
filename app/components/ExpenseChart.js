@@ -182,6 +182,21 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
     }, [budgets, currentMonth, saveBudgetsToLocalStorage]);
 
     /**
+     * フォーカスから外れた際にマイナス値をminで更新
+     * @param {HTMLInputElement} e.target - イベント発生時の入力フィールド
+     */
+    const handleBlur = (e) => {
+        const minAmount = 0;
+        const inputValue = Number(e.target.value);
+
+        if (inputValue < minAmount) {
+            e.target.value = minAmount;
+
+            setBudgetInputValue(String(minAmount));
+        }
+    };
+
+    /**
      * 予算編集開始
      * @param {string} categoryId - カテゴリID
      * @param {number} currentAmount - 現在の予算額
@@ -333,7 +348,9 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
                                             type="number"
                                             step={1000}
                                             value={budgetInputValue}
+                                            min={0}
                                             onChange={(e) => setBudgetInputValue(e.target.value)}
+                                            onBlur={handleBlur}
                                             placeholder="予算額"
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter') {
