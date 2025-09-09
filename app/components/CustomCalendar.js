@@ -6,7 +6,7 @@ import styles from './CustomCalendar.module.css';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
-import { IoTrashBin, IoCreate } from 'react-icons/io5';
+import { IoTrashBin, IoCreate, IoMenu } from 'react-icons/io5';
 
 /**
  * カスタムカレンダーコンポーネント
@@ -18,10 +18,29 @@ import { IoTrashBin, IoCreate } from 'react-icons/io5';
  */
 export default function CustomCalendar({ expenses, setExpenses, categories, selectedDate, setSelectedDate, setEditingExpense, setIsEditMode }) {
     /**
+     * 日付文字列をISO形式に変換するユーティリティ関数
+     * @param {string | Date} dateValue - 日付/日付文字列
+     * @returns {string} YYYY-MM-DD形式の日付文字列
+     */
+    const getISODateString = (dateValue) => {
+        if (!dateValue) return '';
+        const date = new Date(dateValue);
+        if (isNaN(date.getTime())) return '';
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    /**
      * 選択日付の支出リスト管理state
      * @type {[Array<object>, React.Dispatch<React.SetStateAction<Array>>]}
      */
-    const [selectedDateExpenses, setSelectedDateExpenses] = useState([]);
+    const [selectedDateExpenses, setSelectedDateExpenses] = useState(() => {
+        if (!selectedDate) return [];
+        const selectedDateStr = getISODateString(selectedDate);
+        return expenses.filter(exp => getISODateString(exp.date) === selectedDateStr);
+    });
 
     /**
      * フィルタリング用state
@@ -39,7 +58,6 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
 
     /**
      * ソート設定管理state
-     * @type
      */
     const [sortConfig, setSortConfig] = useState({
         field: 'date',
@@ -48,28 +66,17 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
 
     /**
      * ソート対象のインデックス
-     * @type
      */
     const [draggedExpenseIndex, setDraggedExpenseIndex] = useState(null);
+
+    /**
+     * ドラッグオーバー中の一時的な並べ替えリスト管理state
+     */
+    const [reorderedExpenses, setReorderedExpenses] = useState(selectedDateExpenses);
 
     const calendarRef = useRef(null);
     const externalEventRef = useRef(null);
     
-    /**
-     * 日付文字列をISO形式に変換するユーティリティ関数
-     * @param {string | Date} dateValue - 日付/日付文字列
-     * @returns {string} YYYY-MM-DD形式の日付文字列
-     */
-    const getISODateString = (dateValue) => {
-        if (!dateValue) return '';
-        const date = new Date(dateValue);
-        if (isNaN(date.getTime())) return '';
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
-
     /**
      * カテゴリのカラーマップ管理Memo
      * @type {object}
@@ -118,31 +125,13 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
         });
 
         updatedList.sort((a, b) => {
-            let aValue, bValue;
-
-            switch (sortConfig.field) {
-                case 'amount':
-                    aValue = Number(a.amount);
-                    bValue = Number(b.amount);
-                    break;
-                case 'category':
-                    aValue = a.selectedCategoryName;
-                    bValue = b.selectedCategoryName;
-                    break;
-                case 'date':
-                default:
-                    aValue = new Date(a.date).getTime();
-                    bValue = new Date(b.date).getTime();
-            }
-
-            if (sortConfig.direction === 'asc') {
-                return aValue > bValue ? 1 : -1;
-            } else {
-                return aValue < bValue ? 1 : -1;
-            }
+            const aSortOrder = a.sortOrder + 1 || Number.MAX_SAFE_INTEGER;
+            const bSortOrder = b.sortOrder + 1 || Number.MAX_SAFE_INTEGER;
+            return aSortOrder - bSortOrder;
         });
 
         setSelectedDateExpenses(updatedList);
+        setReorderedExpenses(updatedList);
     }, [expenses, selectedDate, displayFilter, sortConfig]);
 
     /**
@@ -164,15 +153,12 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
         setDraggedExpenseIndex(index);
         e.dataTransfer.effectAllowed = 'move';
         e.stopPropagation();
+
+        e.dataTransfer.setData('text/plain', ''); // 空データでカレンダードロップを無効化
     };
-    const handleExpenseDragOver = (e) => {
+    const handleExpenseDragOver = (e, dropIndex) => {
         e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-    };
-    const handleExpenseDrop = (e, dropIndex) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
+
         if (draggedExpenseIndex === null || draggedExpenseIndex === dropIndex) {
             return;
         }
@@ -181,18 +167,32 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
         const draggedExpense = newExpenses[draggedExpenseIndex];
 
         newExpenses.splice(draggedExpenseIndex, 1);
-        newExpenses.splice(dropIndex, 0, draggedExpense);
 
+        let newDropIndex = dropIndex;
+        if (draggedExpenseIndex < dropIndex) {
+            newDropIndex = dropIndex - 1;
+        }
+
+        newExpenses.splice(newDropIndex, 0, draggedExpense);
+
+        setReorderedExpenses(newExpenses);
+    };
+    const handleExpenseDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
         const updatedAllExpenses = expenses.map(exp => {
-            const foundIndex = newExpenses.findIndex(newExp => newExp.id === exp.id);
+            const foundIndex = reorderedExpenses.findIndex(newExp => newExp.id === exp.id);
             if (foundIndex !== -1) {
-                return { ...newExpenses[foundIndex], sortOrder: foundIndex };
+                return { ...reorderedExpenses[foundIndex], sortOrder: foundIndex };
             }
             return exp;
         });
 
         setExpenses(updatedAllExpenses);
         localStorage.setItem('expenses', JSON.stringify(updatedAllExpenses));
+        setDraggedExpenseIndex(null);
+        setReorderedExpenses(selectedDateExpenses);
     };
     const handleExpenseDragEnd = () => {
         setDraggedExpenseIndex(null);
@@ -440,7 +440,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
      * @param {object} exp - 支出データ
      * @returns {JSX.Element} 支出項目のJSX
      */
-    const renderExpenseItem = (exp) => {
+    const renderExpenseItem = (exp, index) => {
         const isExpanded = expandedExpenseId === exp.id;
         const hasMemo = exp.memo && exp.memo.trim() !== '';
 
@@ -455,13 +455,13 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                 }}
                 data-expense={JSON.stringify(exp)}
                 title={!isExpanded && hasMemo ? 'メモ確認' : ''}
-                draggable={true}
-                onDragStart={(e) => handleExpenseDragStart(e, index)}
-                onDragOver={handleExpenseDragOver}
-                onDrop={(e) => handleExpenseDrop(e, index)}
-                onDragEnd={handleExpenseDragEnd}
+                // draggable={true}
+                // onDragStart={(e) => handleExpenseDragStart(e, index)}
+                // onDragOver={(e) => handleExpenseDragOver(e, index)}
+                // onDrop={handleExpenseDrop}
+                // onDragEnd={handleExpenseDragEnd}
             >
-                <div className={styles.detailsExpense}>
+                <div className={styles.detailsExpense} ref={externalEventRef}>
                     <div className={styles.detailsItemLeft}>
                         <p>{exp.selectedCategoryName}&nbsp;</p>
                     </div>
@@ -483,6 +483,18 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                             }}
                             title="削除"
                         />
+                    </div>
+
+                    <div
+                        className={styles.dragHandle}
+                        draggable={true}
+                        onDragStart={(e) => handleExpenseDragStart(e, index)}
+                        onDragOver={(e) => handleExpenseDragOver(e, index)}
+                        onDrop={handleExpenseDrop}
+                        onDragEnd={handleExpenseDragEnd}
+                        title="並び替え"
+                    >
+                        <IoMenu />
                     </div>
                 </div>
 
@@ -531,14 +543,14 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                     }}
                 />
             </div>
-            <div className={styles.detailsContainer} ref={externalEventRef}>
+            <div className={styles.detailsContainer}>
                 {selectedDateExpenses.length > 0 && (
                     <h3 className={styles.detailsTitle}>
                         {new Date(selectedDateExpenses[0].date).toLocaleDateString()}の支出
                     </h3>
                 )}
                 <ul className={styles.detailsList}>
-                    {selectedDateExpenses.map(exp => renderExpenseItem(exp))}
+                    {reorderedExpenses.map((exp, index) => renderExpenseItem(exp, index))}
                 </ul>
             </div>
         </div>
