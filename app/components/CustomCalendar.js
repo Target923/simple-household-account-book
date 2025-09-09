@@ -304,7 +304,8 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                 itemSelector: '.draggable-expense',
                 eventData: function(eventEl) {
                     try {
-                        const data = JSON.parse(eventEl.getAttribute('data-expense'));
+                        const parentLi = eventEl.closest('[data-expense]');
+                        const data = JSON.parse(parentLi.getAttribute('data-expense'));
                         return {
                             ...data,
                             id: crypto.randomUUID(),
@@ -330,8 +331,10 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
      */
     const handleDrop = (dropInfo) => {
         const droppedElement = dropInfo.draggedEl;
-        const expenseData = JSON.parse(droppedElement.getAttribute('data-expense'));
 
+        const expenseElement = droppedElement.closest('[data-expense]');
+
+        const expenseData = JSON.parse(expenseElement.getAttribute('data-expense'));
         const newExpense = {
             ...expenseData,
             id: crypto.randomUUID(),
@@ -447,7 +450,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
         return (
             <li
                 key={exp.id}
-                className={`${styles.detailsItem} draggable-expense ${isExpanded ? styles.Expanded : ''}`}
+                className={`${styles.detailsItem} ${isExpanded ? styles.Expanded : ''}`}
                 onClick={() => hasMemo && handleToggleExpanded(exp.id)}
                 style={{
                     backgroundColor: categoryColors[exp.selectedCategoryName] || '#555',
@@ -461,34 +464,38 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                 // onDrop={handleExpenseDrop}
                 // onDragEnd={handleExpenseDragEnd}
             >
-                <div className={styles.detailsExpense} ref={externalEventRef}>
-                    <div className={styles.detailsItemLeft}>
-                        <p>{exp.selectedCategoryName}&nbsp;</p>
+                <div className={styles.detailsExpense}>
+                    <div className={`${styles.detailsItemList} draggable-expense`}>
+                        <div className={styles.detailsItemLeft}>
+                            <p>{exp.selectedCategoryName}&nbsp;</p>
+                        </div>
+                        <div className={styles.detailsItemRight}>
+                            <p>{exp.amount}円&nbsp;</p>
+                            <IoCreate
+                                className={styles.Button}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStartEdit(exp)
+                                }}
+                                title="編集"
+                            />
+                            <IoTrashBin
+                                className={styles.Button}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteExpense(exp.id)
+                                }}
+                                title="削除"
+                            />
+                        </div>
                     </div>
-                    <div className={styles.detailsItemRight}>
-                        <p>{exp.amount}円&nbsp;</p>
-                        <IoCreate
-                            className={styles.Button}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleStartEdit(exp)
-                            }}
-                            title="編集"
-                        />
-                        <IoTrashBin
-                            className={styles.Button}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteExpense(exp.id)
-                            }}
-                            title="削除"
-                        />
-                    </div>
-
                     <div
                         className={styles.dragHandle}
                         draggable={true}
-                        onDragStart={(e) => handleExpenseDragStart(e, index)}
+                        onDragStart={(e) => {
+                            e.stopPropagation();
+                            handleExpenseDragStart(e, index);
+                        }}
                         onDragOver={(e) => handleExpenseDragOver(e, index)}
                         onDrop={handleExpenseDrop}
                         onDragEnd={handleExpenseDragEnd}
@@ -543,7 +550,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                     }}
                 />
             </div>
-            <div className={styles.detailsContainer}>
+            <div className={styles.detailsContainer} ref={externalEventRef}>
                 {selectedDateExpenses.length > 0 && (
                     <h3 className={styles.detailsTitle}>
                         {new Date(selectedDateExpenses[0].date).toLocaleDateString()}の支出
