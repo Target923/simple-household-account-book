@@ -1,12 +1,12 @@
 'use client';
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 
 import styles from './CustomCalendar.module.css';
 
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
-import { IoTrashBin, IoCreate, IoMenu } from 'react-icons/io5';
+import { IoTrashBin, IoCreate, } from 'react-icons/io5';
 
 /**
  * カスタムカレンダーコンポーネント
@@ -43,6 +43,18 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
     });
 
     /**
+     * ドラッグ中の支出インデックスとY座標の管理state
+     * @type {[number|null, React.Dispatch<React.SetStateAction<number|null>>]}
+     */
+    const [draggingItemIndex, setDraggingItemIndex] = useState(null);
+
+    /**
+     * ドラッグオーバー中のインデックスの管理state
+     * @type {[number|null, React.Dispatch<React.SetStateAction<number|null>>]}
+     */
+    const [dragOverItemIndex, setDragOverItemIndex] = useState(null);
+
+    /**
      * フィルタリング用state
      */
     const [displayFilter, setDisplayFilter] = useState({
@@ -57,14 +69,6 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
     const [expandedExpenseId, setExpandedExpenseId] = useState(null);
 
     /**
-     * ソート設定管理state
-     */
-    const [sortConfig, setSortConfig] = useState({
-        field: 'date',
-        direction: 'desc',
-    });
-
-    /**
      * ソート対象のインデックス
      */
     const [draggedExpenseIndex, setDraggedExpenseIndex] = useState(null);
@@ -76,6 +80,8 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
 
     const calendarRef = useRef(null);
     const externalEventRef = useRef(null);
+    const dragItemRef = useRef(null);
+    const dragOverItemRef = useRef(null);
     
     /**
      * カテゴリのカラーマップ管理Memo
@@ -106,6 +112,62 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
     };
 
     /**
+     * ドラッグ開始ハンドラ（マウスイベント）
+     */
+    const handleMounseDown = (e, index) => {
+        setDraggingItemIndex(index);
+        e.preventDefault();
+    };
+
+    /**
+     * ドラッグ中のアイテム移動を処理するハンドラ（マウスイベント）
+     */
+    const handleMouseMove = useCallback((e) => {
+        if (draggingItemIndex === null) return;
+        
+        const container = externalEventRef.current;
+        const items = Array.from(container.querySelectorAll(`li.${styles.detailsItem}`));
+
+        let newIndex = items.findIndex(item => {
+            const rect = item.getBoundingClientRect();
+            return e.clientY >= rect.top && e.clientY <= rect.bottom;
+        });
+
+        setDragOverItemIndex(newIndex !== -1 ? newIndex : null);
+ 
+    }, [draggingItemIndex, externalEventRef]);
+
+    /**
+     * ドラッグ終了ハンドラ（マウスイベント）
+     */
+    const handleMouseUp = useCallback(() => {
+        if (draggingItemIndex === null) return;
+
+        if (dragOverItemIndex !== null && dragOverItemIndex !== draggingItemIndex) {
+            const newExpenses = [...reorderedExpenses];
+            const [draggedItem] = newExpenses.splice(draggedExpenseIndex, 1);
+            newExpenses.splice(dragOverItemIndex, 0, draggedItem);
+
+            setReorderedExpenses(newExpenses);
+
+            const updatedAllExpenses = expenses.map(exp => {
+                const foundIndex = newExpenses.findIndex(newExp => newExp.id === exp.id);
+                if (foundIndex !== -1) {
+                    return { ...newExpenses[foundIndex], sortOrder: foundIndex };
+                }
+                return exp;
+            });
+
+            setExpenses(updatedAllExpenses);
+            localStorage.setItem('expenses', JSON.stringify(updatedAllExpenses));
+        }
+
+        setDraggingItemIndex(null);
+        setDragOverItemIndex(null);
+        setReorderedExpenses(selectedDateExpenses);
+    }, [draggingItemIndex, dragOverItemIndex, draggedExpenseIndex, reorderedExpenses, expenses, setExpenses, selectedDateExpenses]);
+
+    /**
      * 支出リスト自動更新
      */
     useEffect(() => {
@@ -132,71 +194,22 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
 
         setSelectedDateExpenses(updatedList);
         setReorderedExpenses(updatedList);
-    }, [expenses, selectedDate, displayFilter, sortConfig]);
+    }, [expenses, selectedDate, displayFilter]);
 
     /**
-     * ソート切り替えUI
+     * マウスイベントリスナーをdocumentに登録/解除
      */
-    const renderSortControls = () => {
-        const handleSortChange = (field) => {
-            setSortConfig(prev => ({
-                field,
-                direction: prev.field === field && prev.direction === 'desc' ? 'asc' : 'desc'
-            }));
+    useEffect(() => {
+        if (draggingItemIndex !== null) {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
         };
-    };
-
-    /**
-     * 支出リストのドラッグ&ドロップハンドラ一覧
-     */
-    const handleExpenseDragStart = (e, index) => {
-        setDraggedExpenseIndex(index);
-        e.dataTransfer.effectAllowed = 'move';
-        e.stopPropagation();
-
-        e.dataTransfer.setData('text/plain', ''); // 空データでカレンダードロップを無効化
-    };
-    const handleExpenseDragOver = (e, dropIndex) => {
-        e.preventDefault();
-
-        if (draggedExpenseIndex === null || draggedExpenseIndex === dropIndex) {
-            return;
-        }
-
-        const newExpenses = [...selectedDateExpenses];
-        const draggedExpense = newExpenses[draggedExpenseIndex];
-
-        newExpenses.splice(draggedExpenseIndex, 1);
-
-        let newDropIndex = dropIndex;
-        if (draggedExpenseIndex < dropIndex) {
-            newDropIndex = dropIndex - 1;
-        }
-
-        newExpenses.splice(newDropIndex, 0, draggedExpense);
-
-        setReorderedExpenses(newExpenses);
-    };
-    const handleExpenseDrop = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const updatedAllExpenses = expenses.map(exp => {
-            const foundIndex = reorderedExpenses.findIndex(newExp => newExp.id === exp.id);
-            if (foundIndex !== -1) {
-                return { ...reorderedExpenses[foundIndex], sortOrder: foundIndex };
-            }
-            return exp;
-        });
-
-        setExpenses(updatedAllExpenses);
-        localStorage.setItem('expenses', JSON.stringify(updatedAllExpenses));
-        setDraggedExpenseIndex(null);
-        setReorderedExpenses(selectedDateExpenses);
-    };
-    const handleExpenseDragEnd = () => {
-        setDraggedExpenseIndex(null);
-    };
+    }, [draggingItemIndex, handleMouseMove, handleMouseUp]);
 
     /**
      * 合計/支出データを統合し、FullCalendarイベント形式に変換
@@ -296,16 +309,15 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
     };
 
     /**
-     * 外部イベントをドラッグ可能にする
+     * 外部イベントをドラッグ可能にする(コンストラクタ)
      */
     useEffect(() => {
         if (externalEventRef.current) {
             const draggable = new Draggable(externalEventRef.current, {
-                itemSelector: '.draggable-expense',
+                itemSelector: `.${styles.detailsItem}`,
                 eventData: function(eventEl) {
                     try {
-                        const parentLi = eventEl.closest('[data-expense]');
-                        const data = JSON.parse(parentLi.getAttribute('data-expense'));
+                        const data = JSON.parse(eventEl.getAttribute('data-expense'));
                         return {
                             ...data,
                             id: crypto.randomUUID(),
@@ -332,9 +344,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
     const handleDrop = (dropInfo) => {
         const droppedElement = dropInfo.draggedEl;
 
-        const expenseElement = droppedElement.closest('[data-expense]');
-
-        const expenseData = JSON.parse(expenseElement.getAttribute('data-expense'));
+        const expenseData = JSON.parse(droppedElement.getAttribute('data-expense'));
         const newExpense = {
             ...expenseData,
             id: crypto.randomUUID(),
@@ -447,25 +457,24 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
         const isExpanded = expandedExpenseId === exp.id;
         const hasMemo = exp.memo && exp.memo.trim() !== '';
 
+        const isDragging = draggingItemIndex === index;
+        const isDragOver = dragOverItemIndex === index;
+
         return (
             <li
                 key={exp.id}
-                className={`${styles.detailsItem} ${isExpanded ? styles.Expanded : ''}`}
+                className={`${styles.detailsItem} ${isExpanded ? styles.Expanded : ''} ${isDragging ? styles.isDragging : ''} ${isDragOver ? styles.isDragOver : ''}`}
                 onClick={() => hasMemo && handleToggleExpanded(exp.id)}
+                onMouseDown={(e) => handleMounseDown(e, index)}
                 style={{
                     backgroundColor: categoryColors[exp.selectedCategoryName] || '#555',
                     cursor: hasMemo ? 'pointer' : 'default'
                 }}
                 data-expense={JSON.stringify(exp)}
                 title={!isExpanded && hasMemo ? 'メモ確認' : ''}
-                // draggable={true}
-                // onDragStart={(e) => handleExpenseDragStart(e, index)}
-                // onDragOver={(e) => handleExpenseDragOver(e, index)}
-                // onDrop={handleExpenseDrop}
-                // onDragEnd={handleExpenseDragEnd}
             >
                 <div className={styles.detailsExpense}>
-                    <div className={`${styles.detailsItemList} draggable-expense`}>
+                    <div className={styles.detailsItemList}>
                         <div className={styles.detailsItemLeft}>
                             <p>{exp.selectedCategoryName}&nbsp;</p>
                         </div>
@@ -488,20 +497,6 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                                 title="削除"
                             />
                         </div>
-                    </div>
-                    <div
-                        className={styles.dragHandle}
-                        draggable={true}
-                        onDragStart={(e) => {
-                            e.stopPropagation();
-                            handleExpenseDragStart(e, index);
-                        }}
-                        onDragOver={(e) => handleExpenseDragOver(e, index)}
-                        onDrop={handleExpenseDrop}
-                        onDragEnd={handleExpenseDragEnd}
-                        title="並び替え"
-                    >
-                        <IoMenu />
                     </div>
                 </div>
 
