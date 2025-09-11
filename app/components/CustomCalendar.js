@@ -57,21 +57,16 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
     const [reorderedExpenses, setReorderedExpenses] = useState(selectedDateExpenses);
 
     /**
-     * ドラッグ中の支出インデックスとY座標の管理state
+     * ドラッグ中の支出インデックス管理state
      * @type {[number|null, React.Dispatch<React.SetStateAction<number|null>>]}
      */
     const [draggingItemIndex, setDraggingItemIndex] = useState(null);
 
     /**
-     * ドラッグオーバー中のインデックスの管理state
+     * ドラッグオーバー中のインデックス管理state
      * @type {[number|null, React.Dispatch<React.SetStateAction<number|null>>]}
      */
     const [dragOverItemIndex, setDragOverItemIndex] = useState(null);
-
-    /**
-     * ソート対象のインデックス
-     */
-    const [draggedExpenseIndex, setDraggedExpenseIndex] = useState(null);
 
     /**
      * フィルタリング用state
@@ -93,8 +88,6 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
     
     const calendarRef = useRef(null);
     const externalEventRef = useRef(null);
-    const dragItemRef = useRef(null);
-    const dragOverItemRef = useRef(null);
 
     // ================================
     // Memo計算
@@ -225,16 +218,27 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
         if (draggingItemIndex === null) return;
         
         const container = externalEventRef.current;
-        const items = Array.from(container.querySelectorAll(`li.${styles.detailsItem}`));
+        if (!container) return;
 
+        const items = Array.from(container.querySelectorAll(`li.${styles.detailsItem}`));
         let newIndex = items.findIndex(item => {
             const rect = item.getBoundingClientRect();
-            return e.clientY >= rect.top && e.clientY <= rect.bottom;
+            return e.clientY >= rect.top && e.clientY <= rect.bottom &&
+                    e.clientX >= rect.left && e.clientX <= rect.right;
         });
 
-        setDragOverItemIndex(newIndex !== -1 ? newIndex : null);
+        if (newIndex !== -1 && newIndex !== dragOverItemIndex) {
+            setDragOverItemIndex(newIndex);
+
+            const newExpenses = [...reorderedExpenses];
+            const [draggedItem] = newExpenses.splice(draggingItemIndex, 1);
+            newExpenses.splice(newIndex, 0, draggedItem);
+
+            setReorderedExpenses(newExpenses);
+            setDraggingItemIndex(newIndex);
+        }
  
-    }, [draggingItemIndex, externalEventRef]);
+    }, [draggingItemIndex, externalEventRef, dragOverItemIndex, reorderedExpenses]);
 
     /**
      * ドラッグ終了ハンドラ（マウスイベント）
@@ -242,29 +246,20 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
     const handleMouseUp = useCallback(() => {
         if (draggingItemIndex === null) return;
 
-        if (dragOverItemIndex !== null && dragOverItemIndex !== draggingItemIndex) {
-            const newExpenses = [...reorderedExpenses];
-            const [draggedItem] = newExpenses.splice(draggedExpenseIndex, 1);
-            newExpenses.splice(dragOverItemIndex, 0, draggedItem);
-
-            setReorderedExpenses(newExpenses);
-
-            const updatedAllExpenses = expenses.map(exp => {
-                const foundIndex = newExpenses.findIndex(newExp => newExp.id === exp.id);
-                if (foundIndex !== -1) {
-                    return { ...newExpenses[foundIndex], sortOrder: foundIndex };
-                }
-                return exp;
-            });
-
-            setExpenses(updatedAllExpenses);
-            localStorage.setItem('expenses', JSON.stringify(updatedAllExpenses));
-        }
+        const updatedAllExpenses = expenses.map(exp => {
+            const foundIndex = reorderedExpenses.findIndex(newExp => newExp.id === exp.id);
+            if (foundIndex !== -1) {
+                return { ...reorderedExpenses[foundIndex], sortOrder: foundIndex };
+            }
+            return exp;
+        });
+        setExpenses(updatedAllExpenses);
+        localStorage.setItem('expenses', JSON.stringify(updatedAllExpenses));
 
         setDraggingItemIndex(null);
         setDragOverItemIndex(null);
         setReorderedExpenses(selectedDateExpenses);
-    }, [draggingItemIndex, dragOverItemIndex, draggedExpenseIndex, reorderedExpenses, expenses, setExpenses, selectedDateExpenses]);
+    }, [draggingItemIndex, reorderedExpenses, expenses, setExpenses, selectedDateExpenses]);
 
     // ================================
     // カレンダーイベントハンドラ
@@ -404,7 +399,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
         const isExpanded = expandedExpenseId === exp.id;
         const hasMemo = exp.memo && exp.memo.trim() !== '';
 
-        const isDragging = draggingItemIndex === index;
+        const isDragging = draggingItemIndex !== null && reorderedExpenses[draggingItemIndex]?.id === exp.id;
         const isDragOver = dragOverItemIndex === index;
 
         return (
