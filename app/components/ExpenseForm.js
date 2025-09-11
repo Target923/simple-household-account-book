@@ -67,14 +67,14 @@ export default function ExpenseForm({ categories, expenses, setExpenses, expense
         event.preventDefault();
 
         if (!expenseData.selectedCategory) {
-            confirm('カテゴリーを選択してください');
+            alert('カテゴリーを選択してください');
             return;
         }
         if (Number(expenseData.amount) < 0) {
-            confirm('金額には0以上を入力してください');
+            alert('金額には0以上を入力してください');
             return;
         } else if (expenseData.amount === '') {
-            confirm('金額を入力してください');
+            alert('金額を入力してください');
             return;
         }
  
@@ -163,6 +163,12 @@ export default function ExpenseForm({ categories, expenses, setExpenses, expense
                         name='date'
                         value={expenseData.date instanceof Date ? expenseData.date.toISOString().substring(0, 10) : expenseData.date}
                         onChange={handleChange}
+                        onKeyDown={(e) => {
+                            e.preventDefault();
+                        }}
+                        onPaste={(e) => {
+                            e.preventDefault();
+                        }}
                     />
                 </li>
                 <li className={styles.formItem} style={{ backgroundColor: 'palegoldenrod' }}>
