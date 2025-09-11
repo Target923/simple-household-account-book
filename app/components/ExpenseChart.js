@@ -1,5 +1,5 @@
 /**
- * @file ExpenseList.js
+ * @file ExpenseChart.js
  * @description 月または日付毎の支出を予算グラフと円グラフで集計するコンポーネント
  * FullCalendarの月切り替えと連携した予算管理機能を提供
  */
@@ -23,17 +23,9 @@ import { PieChart, Pie } from 'recharts';
  * @returns {JSX.Element} 支出チャートコンポーネント
  */
 export default function ExpenseList({ expenses, setExpenses, categories, selectedDate, }) {
-    /**
-     * 日付文字列をISO形式に変換するユーティリティ関数
-     * @param {string | Date} dateValue - 日付/日付文字列
-     * @returns {string} YYYY-MM-DD形式の日付文字列
-     */
-    const getISODateString = (dateValue) => {
-        if (dateValue instanceof Date) {
-            return dateValue.toISOString().split('T')[0];
-        }
-        return dateValue.split('T')[0];
-    };
+    // ================================
+    // State管理
+    // ================================
 
     /**
      * 予算データの状態管理state
@@ -43,10 +35,11 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
     const [budgets, setBudgets] = useState([]);
 
     /**
-     * 円グラフの表示モード状態管理（'day' または 'month'）
+     * 円グラフの表示モード状態管理（'day'/'month' 'category'/'amount'）
      * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
      */
-    const [displayMode, setDisplayMode] = useState('month');
+    const [viewMode, setViewMode] = useState('month');
+    const [sortBy, setSortBy] = useState('category');
 
     /**
      * 予算入力フォームの表示状態管理
@@ -59,6 +52,41 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
      * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
      */
     const [budgetInputValue, setBudgetInputValue] = useState('');
+
+    /**
+     * 円グラフのサイズ管理state
+     * @type {[object, React.Dispatch<React.SetStateAction<object>>]}
+     */
+    const [pieChartSize, setPieChartSize] = useState({ width: 0, height: 0 });
+
+    // ================================
+    // Ref管理
+    // ================================
+
+    /**
+     * 円グラフのサイズ管理用ref
+     */
+    const pieChartRef = useRef(null);
+
+    // ================================
+    // ユーティリティ関数
+    // ================================
+
+    /**
+     * 日付文字列をISO形式に変換するユーティリティ関数
+     * @param {string | Date} dateValue - 日付/日付文字列
+     * @returns {string} YYYY-MM-DD形式の日付文字列
+     */
+    const getISODateString = (dateValue) => {
+        if (dateValue instanceof Date) {
+            return dateValue.toISOString().split('T')[0];
+        }
+        return dateValue.split('T')[0];
+    };
+
+    // ================================
+    // コールバック関数（計算系）
+    // ================================
 
     /**
      * 特定の月とカテゴリの支出合計を計算する関数
@@ -76,7 +104,8 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
             .reduce((total, expense) => total + Number(expense.amount), 0);
     }, [expenses]);
 
-    /**カテゴリの予算状況を計算する関数（メイン関数）
+    /**
+     * カテゴリの予算状況を計算する関数（メイン関数）
      * @param {string} targetMonth - 対象月
      * @returns {Array} カテゴリ毎の予算状況
      */
@@ -131,6 +160,10 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
         localStorage.setItem('budgets', JSON.stringify(newBudgets));
     }, []);
 
+    // ================================
+    // Memo計算
+    // ================================
+
     /**
      * 現在の月を取得
      * @type {string} YYYY-MM形式の現在月
@@ -141,12 +174,111 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
         return `${year}-${month}`;
     }, [selectedDate]);
 
+    /**
+     * 現在の日付を取得
+     * @type {string} YYYY-MM-DD形式の現在日付
+     */
     const currentDate = useMemo(() => {
         const year = selectedDate.getFullYear();
         const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
         const date = String(selectedDate.getDate()).padStart(2, '0');
         return `${year}-${month}-${date}`;
     }, [selectedDate]);
+
+    /**
+     * 選択された日付に一致する支出をフィルタリング（円グラフ用）
+     * @type {Array<object>} 選択日の支出
+     */
+    const filteredExpenses = useMemo(() => {
+        if (!selectedDate) {
+            return [];
+        }
+
+        if (viewMode === 'month') {
+            const selectedMonth = selectedDate.getFullYear() + '-' + String(selectedDate.getMonth() + 1).padStart(2, '0');
+            return expenses.filter(expenseData => {
+                const expenseMonth = getISODateString(expenseData.date).substring(0, 7);
+                return expenseMonth === selectedMonth;
+            });
+        }
+
+        return expenses.filter(expenseData => {
+                const expenseDate = new Date(expenseData.date);
+                return expenseDate.getFullYear() === selectedDate.getFullYear() &&
+                        expenseDate.getMonth() === selectedDate.getMonth() &&
+                        expenseDate.getDate() === selectedDate.getDate();
+        });
+    }, [expenses, selectedDate, viewMode]);
+
+    /**
+     * カテゴリ毎の金額の集計データ（円グラフ用）
+     * @type {Array<{name: string, value: number, color: string}>}
+     */
+    const aggregatedData = useMemo(() => {
+        const newExpenses = filteredExpenses.reduce((acc, expenseData) => {
+            const existingCategory = acc.find(item => item.name === expenseData.selectedCategoryName);
+            const categoryColor = categories.find(cat => cat.name === expenseData.selectedCategoryName)?.color;
+
+            const colorToUse = categoryColor || CATEGORY_COLORS[acc.length % CATEGORY_COLORS.length];
+
+            if (existingCategory) {
+                existingCategory.value += Number(expenseData.amount);
+            } else {
+                acc.push({
+                    name: expenseData.selectedCategoryName,
+                    value: Number(expenseData.amount),
+                    color: colorToUse,
+                });
+            }
+            return acc;
+        }, []);
+
+        if (sortBy === 'category') {
+            newExpenses.sort((a, b) => {
+                const indexA = categories.findIndex(cat => cat.name === a.name);
+                const indexB = categories.findIndex(cat => cat.name === b.name);
+                return indexA - indexB;
+            });
+        } else if (sortBy === 'amount') {
+            newExpenses.sort((a, b) => b.value - a.value);
+        }
+
+        return newExpenses;
+    }, [filteredExpenses, categories, sortBy]);
+
+    /**
+     * 予算状態データを更新
+     * @type {Array<object>} カテゴリ毎の予算状況
+     */
+    const budgetStatusData = useMemo(() => {
+        return calculateBudgetStatus(currentMonth);
+    }, [calculateBudgetStatus, currentMonth]);
+
+    /**
+     * 予算グラフ用データ生成関数
+     * @return {Array<object>} 予算グラフ用データ
+     */
+    const budgetChartData = useMemo(() => {
+        return budgetStatusData
+            .filter(status => status.hasBudget)
+            .map(status => ({
+                categoryId: status.categoryId,
+                categoryName: status.categoryName,
+                shortCategoryName: status.categoryName.substring(0, 2),
+                budgetAmount: status.budgetAmount,
+                totalExpense: status.totalExpense,
+                usagePercentage: status.usagePercentage,
+                usagePercentageForGraph: status.usagePercentageForGraph,
+                remainingBudget: Math.max(0, status.remainingBudget),
+                overExpense: Math.max(0, -status.remainingBudget),
+                color: status.color,
+                isOverBudget: status.remainingBudget < 0,
+            }));
+    }, [budgetStatusData]);
+
+    // ================================
+    // イベントハンドラ（予算管理系）
+    // ================================
 
     /**
      * 予算設定/更新関数
@@ -207,44 +339,45 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
     }, []);
 
     /**
-     * 予算状態データを更新
-     * @type {Array<object>} カテゴリ毎の予算状況
+     * 表示モードセレクターのクリックハンドラ
+     * @returns {void}
      */
-    const budgetStatusData = useMemo(() => {
-        return calculateBudgetStatus(currentMonth);
-    }, [calculateBudgetStatus, currentMonth]);
+    const handleViewMode = () => {
+        setViewMode(prevMode => (prevMode === 'day' ? 'month' : 'day'));
+    };
+    const handleSortBy = () => {
+        setSortBy(prevMode => (prevMode === 'category' ? 'amount' : 'category'));
+    };
+
+    // ================================
+    // レンダリング関数
+    // ================================
 
     /**
-     *  ローカルストレージから予算データ読み込み
+     * 円グラフのカスタムラベル描画関数
+     * @param {object} props - Rechartsが提供するプロパティ(中心座標、半径、割合、etc...)
+     * @returns {JSX.Element|null} SVGの<text>要素またはnull
      */
-    useEffect(() => {
-        const storedBudgets = localStorage.getItem('budgets');
-        if (storedBudgets) {
-            setBudgets(JSON.parse(storedBudgets));
-        }
-    }, []);
+    const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
+        const RADIAN = Math.PI / 180;
+        const radius = innerRadius + (outerRadius - innerRadius) * 0.65;
+        const x = cx + radius * Math.cos(-midAngle * RADIAN);
+        const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
-    /**
-     * 予算グラフ用データ生成関数
-     * @return {Array<object>} 予算グラフ用データ
-     */
-    const budgetChartData = useMemo(() => {
-        return budgetStatusData
-            .filter(status => status.hasBudget)
-            .map(status => ({
-                categoryId: status.categoryId,
-                categoryName: status.categoryName,
-                shortCategoryName: status.categoryName.substring(0, 2),
-                budgetAmount: status.budgetAmount,
-                totalExpense: status.totalExpense,
-                usagePercentage: status.usagePercentage,
-                usagePercentageForGraph: status.usagePercentageForGraph,
-                remainingBudget: Math.max(0, status.remainingBudget),
-                overExpense: Math.max(0, -status.remainingBudget),
-                color: status.color,
-                isOverBudget: status.remainingBudget < 0,
-            }));
-    }, [budgetStatusData]);
+        const data = aggregatedData[index];
+        if (!data) return null;
+
+        const percentage = (percent * 100).toFixed(0);
+
+        if (percentage === '0') return null;
+
+        return (
+            <text x={x} y={y} fill="black" textAnchor={"middle"} dominantBaseline="central">
+            <tspan x={x} dy="-0.5em">{`${data.name} ${percentage}%`}</tspan>
+            <tspan x={x} dy="1em">{`${data.value}円`}</tspan>
+            </text>
+        );
+    };
 
     /**
      * 予算グラフ描画用
@@ -386,7 +519,7 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
                                                     className={styles.budgetDetailsItem}
                                                     style={{color: budgetStatus.remainingBudget < 0 ? 'darkred' : 'black'}}
                                                 >
-                                                    使用率: {budgetStatus.usagePercentage}%
+                                                    残り: {budgetStatus.budgetAmount - budgetStatus.totalExpense}円
                                                 </div>
                                                 <div
                                                     className={styles.budgetDetailsButton}
@@ -412,107 +545,6 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
             </div>
         );
     };
-
-    /**
-     * 選択された日付に一致する支出をフィルタリング（円グラフ用）
-     * @type {Array<object>} 選択日の支出
-     */
-    const filteredExpenses = useMemo(() => {
-        if (!selectedDate) {
-            return [];
-        }
-
-        if (displayMode === 'month') {
-            const selectedMonth = selectedDate.getFullYear() + '-' + String(selectedDate.getMonth() + 1).padStart(2, '0');
-            return expenses.filter(expenseData => {
-                const expenseMonth = getISODateString(expenseData.date).substring(0, 7);
-                return expenseMonth === selectedMonth;
-            });
-        }
-
-        return expenses.filter(expenseData => {
-                const expenseDate = new Date(expenseData.date);
-                return expenseDate.getFullYear() === selectedDate.getFullYear() &&
-                        expenseDate.getMonth() === selectedDate.getMonth() &&
-                        expenseDate.getDate() === selectedDate.getDate();
-        });
-    }, [expenses, selectedDate, displayMode]);
-
-    /**
-     * カテゴリ毎の金額の集計データ（円グラフ用）
-     * @type {Array<{name: string, value: number, color: string}>}
-     */
-    const aggregatedData = useMemo(() => {
-        return filteredExpenses.reduce((acc, expenseData) => {
-            const existingCategory = acc.find(item => item.name === expenseData.selectedCategoryName);
-            const categoryColor = categories.find(cat => cat.name === expenseData.selectedCategoryName)?.color;
-
-            const colorToUse = categoryColor || CATEGORY_COLORS[acc.length % CATEGORY_COLORS.length];
-
-            if (existingCategory) {
-                existingCategory.value += Number(expenseData.amount);
-            } else {
-                acc.push({
-                    name: expenseData.selectedCategoryName,
-                    value: Number(expenseData.amount),
-                    color: colorToUse,
-                });
-            }
-
-            return acc;
-        }, []);
-    }, [filteredExpenses, categories]);
-
-    /**
-     * 円グラフのカスタムラベル描画関数
-     * @param {object} props - Rechartsが提供するプロパティ(中心座標、半径、割合、etc...)
-     * @returns {JSX.Element|null} SVGの<text>要素またはnull
-     */
-    const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
-        const RADIAN = Math.PI / 180;
-        const radius = innerRadius + (outerRadius - innerRadius) * 0.65;
-        const x = cx + radius * Math.cos(-midAngle * RADIAN);
-        const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-        const data = aggregatedData[index];
-        if (!data) return null;
-
-        const percentage = (percent * 100).toFixed(0);
-
-        if (percentage === '0') return null;
-
-        return (
-            <text x={x} y={y} fill="black" textAnchor={"middle"} dominantBaseline="central">
-            <tspan x={x} dy="-0.5em">{`${data.name} ${percentage}%`}</tspan>
-            <tspan x={x} dy="1em">{`${data.value}円`}</tspan>
-            </text>
-        );
-    };
-
-    /**
-     * 円グラフのサイズ管理
-     */
-    const pieChartRef = useRef(null);
-    const [pieChartSize, setPieChartSize] = useState({ width: 0, height: 0 });
-
-    useEffect(() => {
-        const handleResize = () => {
-            if (pieChartRef.current) {
-                setPieChartSize({
-                    width: pieChartRef.current.clientWidth,
-                    height: pieChartRef.current.clientHeight,
-                });
-            }
-        };
-
-        handleResize();
-
-        window.addEventListener('resize', handleResize);
-
-        return () => {
-            window.removeEventListener('resize', handleResize);
-        };
-    }, []);
 
     /**
      * 円グラフ描画関数
@@ -558,19 +590,50 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
         );
     };
 
+    // ================================
+    // useEffect（副作用処理）
+    // ================================
+
     /**
-     * トグルボタンのクリックハンドラ
-     * @returns {void}
+     * ローカルストレージから予算データ読み込み
      */
-    const handleToggleClick = () => {
-        setDisplayMode(prevMode => (prevMode === 'day' ? 'month' : 'day'));
-    };
+    useEffect(() => {
+        const storedBudgets = localStorage.getItem('budgets');
+        if (storedBudgets) {
+            setBudgets(JSON.parse(storedBudgets));
+        }
+    }, []);
+
+    /**
+     * 円グラフのサイズ管理とリサイズ対応
+     */
+    useEffect(() => {
+        const handleResize = () => {
+            if (pieChartRef.current) {
+                setPieChartSize({
+                    width: pieChartRef.current.clientWidth,
+                    height: pieChartRef.current.clientHeight,
+                });
+            }
+        };
+
+        handleResize();
+
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
+    // ================================
+    // メインレンダー
+    // ================================
 
     return (
         <div className={styles.expenseListContainer}>
             <div className={styles.budgetsList}>
                 <h3 className={styles.graphTitle}>予算管理グラフ: {currentMonth}</h3>
-
 
                 {renderBudgetChart()}
                 {renderBudgetSettings()}
@@ -578,13 +641,21 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
             <div ref={pieChartRef} className={styles.pieChart}>
                 <div className={styles.chartTitleContainer}>
                     <h3 className={styles.graphTitle}>
-                        支出内訳: {displayMode === 'day' ? currentDate : currentMonth}
+                        支出内訳: {viewMode === 'day' ? currentDate : currentMonth}
                     </h3>
-                    <div
-                        className={styles.toggleButton}
-                        onClick={handleToggleClick}
-                    >
-                        {displayMode === 'day' ? '日別' : '月別'}
+                    <div className={styles.pieChartButtonContainer}>
+                        <div
+                            className={styles.toggleButton}
+                            onClick={handleViewMode}
+                        >
+                            {viewMode === 'day' ? '日別' : '月別'}
+                        </div>
+                        <div
+                            className={styles.toggleButton}
+                            onClick={handleSortBy}
+                        >
+                            {sortBy === 'category' ? 'カテゴリー順' : '金額順'}
+                        </div>
                     </div>
                 </div>
 

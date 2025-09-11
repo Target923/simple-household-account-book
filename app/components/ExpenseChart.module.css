@@ -48,6 +48,7 @@
 .budgetsListTitle {
     font-size: 1.5em;
     font-weight: bold;
+    margin-bottom: 10px;
 }
 
 .budgetsForm {
@@ -123,9 +124,12 @@
     
 }
 
+.pieChartButtonContainer {
+    display: flex;
+}
+
 .toggleButton {
     border: 1px solid black;
-    border-radius: 4px;
     color: black;
     background-color: silver;
 
@@ -136,6 +140,12 @@
 .toggleButton:hover {
     cursor: pointer;
     background-color: gold;
+}
+.toggleButton:first-child {
+    border-radius: 4px 0 0 4px;
+}
+.toggleButton:last-child {
+    border-radius: 0 4px 4px 0;
 }
 
 .customPieChart path {

@@ -151,14 +151,31 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
             id: cat.id,
             title: `${cat.name.substring(0, 2)}: ${cat.amount}円`,
             date: getISODateString(cat.date),
+            name: cat.name,
             backgroundColor: cat.color,
             textColor: 'black',
             eventType: 'category',
             editable: false,
         }));
 
-        return [...dailyTotalEvents, ...categoryTotalEvents];
-    }, [expenses, categoryColors]);
+        const allEvents = [...dailyTotalEvents, ...categoryTotalEvents];
+
+        allEvents.sort((a, b) => {
+            const isATotal = a.eventType === 'total';
+            const isBTotal = b.eventType === 'total';
+
+            if (isATotal && isBTotal) return 0;
+            if (isATotal) return -1;
+            if (isBTotal) return 1;
+
+            const indexA = categories.findIndex(cat => cat.name === a.name);
+            const indexB = categories.findIndex(cat => cat.name === b.name);
+            return (indexA !== -1 ? indexA : Number.MAX_SAFE_INTEGER) -
+                    (indexB !== -1 ? indexB : Number.MAX_SAFE_INTEGER);
+        });
+
+        return allEvents;
+    }, [expenses, categoryColors, categories]);
 
     // ================================
     // イベントハンドラ（編集・削除系）
@@ -564,7 +581,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
                     events={calendarEvents}
                     eventDisplay='block'
                     eventContent={renderEventContent}
-                    eventOrder='-eventType' //逆アルファベット順
+                    eventOrder={false}
                     contentHeight='auto'
                     editable={true}
                     eventDrop={handleEventDrop}
