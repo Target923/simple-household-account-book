@@ -6,7 +6,7 @@ import styles from './CategoryForm.module.css';
 import { CATEGORY_COLORS } from './category_colors';
 
 import { IoTrashBin } from 'react-icons/io5';
-import { IoAddCircleSharp, IoColorPaletteSharp } from "react-icons/io5";
+import { IoColorPaletteSharp } from "react-icons/io5";
 import { MdModeEdit } from "react-icons/md";
 
 export default function CategoryForm({ categories, setCategories, expenses, setExpenses, expenseData, setExpenseData, editingExpense, setEditingExpense, isEditMode, setIsEditMode }) {
