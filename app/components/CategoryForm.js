@@ -55,7 +55,7 @@ export default function CategoryForm({ categories, setCategories, expenses, setE
         if (event.type === 'click' || event.key === 'Enter') {
             event.preventDefault();
             if (categoryName.trim()) {
-                saveCategoryInLocalStorage();
+                saveCategoryToDB();
             }
         }
     }
@@ -63,54 +63,89 @@ export default function CategoryForm({ categories, setCategories, expenses, setE
     /**
      * 編集したカテゴリー名を保存
      * @param {string} categoryId - 編集中ID
+     * @param {string} originalName - 元のカテゴリ名
      */
-    const handleSaveEdit = (categoryId, categoryName) => {
+    const handleSaveEdit = async (categoryId, originalName) => {
         if (!editingCategory?.name) {
             setEditingCategory('');
             return;
         }
 
-        const isCategoryExists = categories.some(cat => cat.name === editingCategory.name);
+        const isCategoryExists = categories.some(cat => cat.name === editingCategory.name && cat.id !== categoryId);
         if (isCategoryExists) {
             setEditingCategory('');
             return
         };
 
-        const updatedCategories = categories.map(cat =>
-            cat.id === categoryId ? { ...cat, name: editingCategory.name } : cat,
-        );
-        setCategories(updatedCategories);
-        localStorage.setItem('categories', JSON.stringify(updatedCategories));
+        try {
+            const currentCategory = categories.find(cat => cat.id === categoryId);
+            const response = await fetch(`/api/categories/${categoryId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: editingCategory.name,
+                    color: currentCategory.color,
+                    sortOrder: currentCategory.sortOrder,
+                }),
+            });
 
-        const updatedExpenses = expenses.map(exp =>
-            exp.selectedCategoryName === categoryName ?
-            { ...exp, selectedCategory: editingCategory.name, selectedCategoryName: editingCategory.name } :
-            exp,
-        )
-        setExpenses(updatedExpenses);
-        localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
+            if (response.OK) {
+                const updatedCategory = await response.json();
+
+                const updatedCategories = categories.map(cat =>
+                    cat.id === categoryId ? updatedCategory : cat
+                );
+                setCategories(updatedCategories);
+
+                const updatedExpenses = expenses.map(exp =>
+                    exp.selectedCategoryName === originalName ?
+                    { ...exp, selectedCategory: editingCategory.name, selectedCategoryName: editingCategory.name } :
+                    exp
+                );
+
+                setExpenses(updatedExpenses);
+            }
+        } catch (error) {
+            console.error('カテゴリーの更新に失敗しました', error);
+        }
 
         setEditingCategory('');
     }
     
     /**
-     * 新しいカテゴリを生成し、ローカルストレージとstateの両方を更新
+     * 新しいカテゴリを生成し、DBとstateの両方を更新
      * state更新時、UIが自動的に再描画
      */
-    function saveCategoryInLocalStorage() {
+    async function saveCategoryToDB() {
         const isCategoryExists = categories.some(cat => cat.name === categoryName);
         if (isCategoryExists) return;
 
-        const newCategory = {
-            id: Date.now().toString(),
-            name: categoryName,
-            color: CATEGORY_COLORS[categories.length % CATEGORY_COLORS.length],
-        };
+        try {
+            const newCategoryData = {
+                name: categoryName,
+                color: CATEGORY_COLORS[categories.length % CATEGORY_COLORS.length],
+                sortOrder: categories.length,
+            };
 
-        const updatedCategories = [...categories, newCategory];
-        setCategories(updatedCategories);
-        localStorage.setItem('categories', JSON.stringify(updatedCategories));
-        setCategoryName('')
+            const response = await fetch('/api/categories', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(newCategoryData),
+            });
+
+            if (response.OK) {
+                const newCategory = await response.json();
+                const updatedCategories = [...categories, newCategory];
+                setCategories(updatedCategories);
+                setCategoryName('');
+            }
+        } catch (error) {
+            console.error('カテゴリの保存に失敗しました', error);
+        }
     }
 
     /**
@@ -142,17 +177,35 @@ export default function CategoryForm({ categories, setCategories, expenses, setE
      * @param {string} categoryId - 削除するID
      * @param {string} categoryName - 選択中カテゴリ
      */
-    function handleDelete(categoryId, categoryName) {
+    async function handleDelete(categoryId, categoryName) {
         if (confirm(`${categoryName}を削除しますか？`)) {
-            const updatedCategories = categories.filter(cat => cat.id !== categoryId);
-            setCategories(updatedCategories);
-            localStorage.setItem('categories', JSON.stringify(updatedCategories));
+            try {
+                const response = await fetch(`/api/categories/${categoryId}`, {
+                    method: 'DELETE',
+                });
+
+                if (response.ok) {
+                    const updatedCategories = categories.filter(cat => cat.id !== categoryId);
+                    setCategories(updatedCategories);
+
+                    if (expenseData.selectedCategory === categoryName) {
+                        setExpenseData(prevExpenseData => ({
+                            ...prevExpenseData,
+                            selectedCategory: '',
+                            color: '',
+                        }));
+                    }
+                }
+            } catch (error) {
+                console.error('カテゴリの削除に失敗しました', error);
+            }
         }
 
         const existingBudgets = JSON.parse(localStorage.getItem('budgets')) || []
         const updatedBudgets = existingBudgets.filter(budget => budget.categoryName !== categoryName);
         localStorage.setItem('budgets', JSON.stringify(updatedBudgets));
     }
+    
     useEffect(() => {
         if (categories.length > 0) {
             const isFound = categories.some(cat => cat.name === expenseData.selectedCategory);
@@ -171,15 +224,38 @@ export default function CategoryForm({ categories, setCategories, expenses, setE
      * @param {string} categoryId - 更新カテゴリID
      * @param {string} newColor - 新しい色のHEXコード
      */
-    const handleColorChange = (categoryId, newColor) => {
-        const updatedCategories = categories.map(category =>
-            category.id === categoryId ? {...category, color: newColor} : category
-        );
-        setCategories(updatedCategories);
-        localStorage.setItem('categories', JSON.stringify(updatedCategories));
+    const handleColorChange = async (categoryId, newColor) => {
+        try {
+            const currentCategory = categories.find(cat => cat.id === categoryId);
+            const response = await fetch(`/api/categories/${categoryId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: currentCategory.name,
+                    color: newColor,
+                    sortOrder: currentCategory.sortOrder,
+                }),
+            });
 
-        if (expenseData.selectedCategory === categories.find(cat => cat.id === categoryId)?.name) {
-            setExpenseData(prev => ({ ...prev, color: newColor }));
+            if (response.ok) {
+                const updatedCategory = await response.json();
+                const updatedCategories = categories.map(cat =>
+                    cat.id === categoryId ? updatedCategory : cat
+                );
+                setCategories(updatedCategories);
+
+                if (expenseData.selectedCategory === currentCategory.name) {
+                    setExpenseData(prev => ({ ...prev, color: newColor }));
+                }
+
+                if (isEditMode && editingExpense?.selectedCategoryName === currentCategory.name) {
+                    setEditingExpense(prev => ({ ...prev, color: newColor }));
+                }
+            }
+        } catch (error) {
+            console.error('カテゴリーの色更新に失敗しました', error);
         }
     };
 

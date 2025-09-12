@@ -61,25 +61,47 @@ export default function Home() {
    * コンポーネントマウント時、ローカルストレージからデータ読み込み
    */
   useEffect(() => {
-    const storedCategories = JSON.parse(localStorage.getItem('categories')) || [];
-    if (storedCategories.length > 0) {
-        setCategories(storedCategories);
-    } else {
-        const initialCategories = [
-            { id: Date.now().toString(), name: '食費', color: CATEGORY_COLORS[0] },
-            { id: (Date.now() + 1).toString(), name: '交通費', color: CATEGORY_COLORS[1] },
-            { id: (Date.now() + 2).toString(), name: '日用品', color: CATEGORY_COLORS[2] }
-        ];
-        setCategories(initialCategories);
-        localStorage.setItem('categories', JSON.stringify(initialCategories));
-    }
+    async function fetchData() {
+      try {
+        const categoriesRes = await fetch('/api/categories');
+        const categoriesData = await categoriesRes.json();
 
-    const storedExpenses = JSON.parse(localStorage.getItem('expenses')) || [];
-    const parsedExpenses = storedExpenses.map(expense => ({
-      ...expense,
-      date: new Date(expense.date),
-    }));
-    setExpenses(parsedExpenses);
+        if (categoriesData.length === 0) {
+          const initialCategories = [
+            { name: '食費', color: CATEGORY_COLORS[0], sortOrder: 0 },
+            { name: '交通費', color: CATEGORY_COLORS[1], sortOrder: 1 },
+            { name: '日用品', color: CATEGORY_COLORS[2], sortOrder: 2 },
+          ];
+
+          const initialCategoriesPromises = initialCategories.map(cat =>
+            fetch('/api/categories', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(cat),
+            })
+          );
+
+          await Promise.all(initialCategoriesPromises);
+
+          setCategories(initialCategories);
+        } else {
+          setCategories(categoriesData);
+        }
+
+        const expensesRes = await fetch('/api/expense');
+        const expensesData = await expensesRes.json();
+
+        const parsedExpenses = expensesData.map(exp => ({
+          ...exp,
+          date: new Date(exp.date),
+        }))
+
+        setExpenses(parsedExpenses);
+      } catch (error) {
+        console.error('データの取得または初期化に失敗しました:', error);
+      }
+    }
+    fetchData();
   }, []);
 
  return (
