@@ -13,14 +13,14 @@ export async function GET() {
             },
         ],
     });
-    return new Response(JSON.stringigy(expenses), { status: 200 });
+    return new Response(JSON.stringify(expenses), { status: 200 });
 }
 
 export async function POST(request) {
     const data = await request.json();
     const newExpense = await prisma.expense.create({
         data: {
-            amount: data.amount,
+            amount: parseFloat(data.amount),
             memo: data.memo,
             selectedCategoryName: data.selectedCategory,
             date: new Date(data.date),

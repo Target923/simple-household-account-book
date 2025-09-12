@@ -85,64 +85,120 @@ export default function ExpenseForm({ categories, expenses, setExpenses, expense
             }
         }
 
-        isEditMode ? updateExpenseDataInLocalStorage() : saveExpenseDataInLocalStorage();
+        isEditMode ? updateExpenseDataInDB() : saveExpenseDataInDB();
     }
 
     /**
      * 新規支出登録を生成し、ローカルストレージとstateの両方を更新
      * state更新時、UIが自動的に再描画
      */
-    function saveExpenseDataInLocalStorage() {
-        const selectedCategoryObject = categories.find(cat => cat.name === expenseData.selectedCategory);
-        const categoryName = selectedCategoryObject ? selectedCategoryObject.name : 'No Category';
+    async function saveExpenseDataInDB() {
+        try {
+            const selectedCategoryObject = categories.find(cat => cat.name === expenseData.selectedCategory);
+            const categoryName = selectedCategoryObject ? selectedCategoryObject.name : 'No Category';
 
-        const newExpenseData = {
-            id: Date.now().toString(),
-            date: expenseData.date,
-            amount: Number(expenseData.amount) || 0,
-            memo: expenseData.memo,
-            selectedCategory: expenseData.selectedCategory,
-            selectedCategoryName: categoryName,
-            color: expenseData.color,
-        };
+            const newExpenseData = {
+                id: Date.now().toString(),
+                date: expenseData.date,
+                amount: Number(expenseData.amount) || 0,
+                memo: expenseData.memo,
+                selectedCategory: expenseData.selectedCategory,
+                selectedCategoryName: categoryName,
+                color: expenseData.color,
+            };
 
-        const existingExpenses = JSON.parse(localStorage.getItem('expenses')) || [];
-        const updateExpenses = [...existingExpenses, newExpenseData];
-        setExpenses(updateExpenses);
+            const response = await fetch('api/expenses', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(newExpenseData),
+            });
 
-        localStorage.setItem('expenses', JSON.stringify(updateExpenses));
+            if (response.ok) {
+                const createdExpense = await response.json();
 
-        setExpenseData({
-            ...expenseData,
-            amount: '',
-            memo: '',
-        });
-    };
+                const expenseForState = {
+                    ...createdExpense,
+                    selectedCategory: categoryName,
+                    selectedCategoryName: categoryName,
+                    color: expenseData.color,
+                    date: new Date(createdExpense.date),
+                };
 
-    function updateExpenseDataInLocalStorage() {
-        const selectedCategoryObject = categories.find(cat => cat.name === expenseData.selectedCategory);
-        const categoryName = selectedCategoryObject ? selectedCategoryObject.name : 'No Category';
+                const updatedExpenses = [...expenses, expenseForState];
+                setExpenses(updatedExpenses);
 
-        const updatedExpenseData = {
-            ...editingExpense,
-            date: expenseData.date,
-            amount: Number(expenseData.amount) || 0,
-            memo: expenseData.memo,
-            selectedCategory: expenseData.selectedCategory,
-            selectedCategoryName: categoryName,
-            color: expenseData.color,
-        };
+                setExpenseData({
+                    ...expenseData,
+                    amount: '',
+                    memo: '',
+                });
+            } else {
+                const errorData = await response.json();
+                alert(`支出の保存に失敗しました: ${errorData.error}`);
+            }
+        } catch (error) {
+            console.error('支出の保存に失敗しました:', error);
+            alert('支出の保存に失敗しました');
+        }
+    }
 
-        const updatedExpenses = expenses.map(exp =>
-            exp.id === editingExpense.id ? updatedExpenseData : exp,
-        );
+    async function updateExpenseDataInDB() {
+        try {
+            const selectedCategoryObject = categories.find(cat => cat.name === expenseData.selectedCategory);
+            const categoryName = selectedCategoryObject ? selectedCategoryObject.name : 'No Category';
 
-        setExpenses(updatedExpenses);
-        localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
+            const updatedExpenseData = {
+                date: expenseData.date,
+                amount: Number(expenseData.amount) || 0,
+                memo: expenseData.memo,
+                selectedCategory: categoryName,
+                sortOrder: editingExpense.sortOrder,
+            };
 
+            const response = await fetch(`/api/expenses/${editingExpense.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updatedExpenseData),
+            });
+
+            if (response.ok) {
+                const updatedExpense = await response.json();
+
+                const expenseForState = {
+                    ...updatedExpense,
+                    selectedCategory: categoryName,
+                    selectedCategoryName: categoryName,
+                    color: expenseData.color,
+                    date: new Date(updatedExpense.date),
+                };
+
+                const updatedExpenses = expenses.map(exp =>
+                    exp.id === editingExpense.id ? expenseForState : exp
+                );
+
+                setExpenses(updatedExpenses);
+
+                resetEditMode();
+            } else {
+                const errorData = await response.json();
+                alert(`支出の更新に失敗しました: ${errorData.error}`);
+            }
+        } catch (error) {
+            console.error('支出更新に失敗しました:', error);
+            alert('支出の更新に失敗しました');
+        }
+    }
+
+    /**
+     * 編集モードリセット&フォーム初期化
+     */
+    function resetEditMode() {
         setIsEditMode(false);
         setEditingExpense(null);
-
         setExpenseData({
             date: new Date(),
             amount: '',
@@ -216,17 +272,7 @@ export default function ExpenseForm({ categories, expenses, setExpenses, expense
                 {isEditMode && (
                     <div
                         className={`${styles.formItem} ${styles.button}`}
-                        onClick={() => {
-                            setIsEditMode(false);
-                            setEditingExpense(null),
-                            setExpenseData({
-                                date: new Date(),
-                                amount: '',
-                                memo: '',
-                                selectedCategory: '',
-                                color: '',
-                            });
-                        }}
+                        onClick={resetEditMode}
                     >
                         編集をキャンセル
                     </div>
