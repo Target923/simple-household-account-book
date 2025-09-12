@@ -108,7 +108,7 @@ export default function CategoryForm({ categories, setCategories, expenses, setE
                 setExpenses(updatedExpenses);
             }
         } catch (error) {
-            console.error('カテゴリーの更新に失敗しました', error);
+            console.error('カテゴリーの更新に失敗しました:', error);
         }
 
         setEditingCategory('');
@@ -144,7 +144,7 @@ export default function CategoryForm({ categories, setCategories, expenses, setE
                 setCategoryName('');
             }
         } catch (error) {
-            console.error('カテゴリの保存に失敗しました', error);
+            console.error('カテゴリの保存に失敗しました:', error);
         }
     }
 
@@ -196,14 +196,37 @@ export default function CategoryForm({ categories, setCategories, expenses, setE
                         }));
                     }
                 }
+
+                await deleteBudgetsByCategory(categoryName);
             } catch (error) {
-                console.error('カテゴリの削除に失敗しました', error);
+                console.error('カテゴリの削除に失敗しました:', error);
             }
         }
+    }
 
-        const existingBudgets = JSON.parse(localStorage.getItem('budgets')) || []
-        const updatedBudgets = existingBudgets.filter(budget => budget.categoryName !== categoryName);
-        localStorage.setItem('budgets', JSON.stringify(updatedBudgets));
+    /**
+     * 指定されたカテゴリの予算データ削除
+     * @param {string} categoryName - 削除対象のカテゴリ名
+     */
+    async function deleteBudgetsByCategory(categoryName) {
+        try {
+            const budgetsResponse = await fetch('/api/budgets');
+            
+            if (budgetsResponse.ok) {
+                const budgets = await budgetsResponse.json();
+                const targetBudgets = budgets.filter(budget => budget.categoryName === categoryName);
+
+                const deletePromises = targetBudgets.map(budget =>
+                    fetch(`/api/budgets/${budget.id}`, {
+                        method: 'DELETE',
+                    })
+                );
+
+                await Promise.all(deletePromises);
+            }
+        } catch (error) {
+            console.error('予算データの削除に失敗しました:', error);
+        }
     }
     
     useEffect(() => {

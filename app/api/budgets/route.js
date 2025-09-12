@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 export async function GET() {
     const budgets = await prisma.budget.findMany({
-        OrderBy: {
+        orderBy: {
             sortOrder: 'asc',
         },
     });
@@ -15,10 +15,10 @@ export async function POST(request) {
     const data = await request.json();
     const newCategory = await prisma.budget.create({
         data: {
-            amount: data.amount,
+            amount: parseFloat(data.amount),
             categoryName: data.categoryName,
             month: data.month,
-            sortOrder: data.sortOrder,
+            sortOrder: data.sortOrder || 0,
         },
     });
     return new Response(JSON.stringify(newCategory), { status: 201 });
