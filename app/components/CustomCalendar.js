@@ -202,10 +202,25 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
      * 支出削除ハンドラ
      * @param {string} expenseId - 支出ID
      */
-    const handleDeleteExpense = (expenseId) => {
-        const updatedExpenses = expenses.filter(exp => exp.id !== expenseId);
-        setExpenses(updatedExpenses);
-        localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
+    const handleDeleteExpense = async (expenseId) => {
+        if (confirm('この支出を削除しますか？')) {
+            try {
+                const response = await fetch(`api/expenses/${expenseId}`, {
+                    method: 'DELETE',
+                });
+
+                if (response.ok) {
+                    const updatedExpenses = expenses.filter(exp => exp.id !== expenseId);
+                    setExpenses(updatedExpenses);
+                } else {
+                    const errorData = await response.json();
+                    alert(`支出の削除に失敗しました: ${errorData.error}`);
+                }
+            } catch (error) {
+                console.error('支出の削除に失敗しました', error);
+                alert('支出の削除に失敗しました');
+            }
+        }
     };
 
     /**
@@ -260,18 +275,43 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
     /**
      * ドラッグ終了ハンドラ（マウスイベント）
      */
-    const handleMouseUp = useCallback(() => {
+    const handleMouseUp = useCallback(async () => {
         if (draggingItemIndex === null) return;
 
-        const updatedAllExpenses = expenses.map(exp => {
-            const foundIndex = reorderedExpenses.findIndex(newExp => newExp.id === exp.id);
-            if (foundIndex !== -1) {
-                return { ...reorderedExpenses[foundIndex], sortOrder: foundIndex };
-            }
-            return exp;
-        });
-        setExpenses(updatedAllExpenses);
-        localStorage.setItem('expenses', JSON.stringify(updatedAllExpenses));
+        try {
+            const updatePromises = reorderedExpenses.map(async (expense, index) => {
+                if (expense.sortOrder !== index) {
+                    return fetch(`api/expenses/${expense.id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            ...expense,
+                            selectedCategoryName: expense.selectedCategoryName,
+                            date: expense.date,
+                            sortOrder: index,
+                        }),
+                    });
+                }
+                return null;
+            });
+
+            await Promise.all(updatePromises.filter(p => p !== null));
+
+            const updatedAllExpenses = expenses.map(exp => {
+                const foundIndex = reorderedExpenses.findIndex(newExp => newExp.id === exp.id);
+                if (foundIndex !== -1) {
+                    return { ...reorderedExpenses[foundIndex], sortOrder: foundIndex };
+                }
+                return exp;
+            });
+            setExpenses(updatedAllExpenses);
+
+        } catch (error) {
+            console.error('並び順の更新に失敗しました:', error);
+            alert('並び順の更新に失敗しました');
+        }
 
         setDraggingItemIndex(null);
         setDragOverItemIndex(null);
@@ -315,24 +355,49 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
      * イベントのドラッグ&ドロップハンドラ
      * @param {object} eventDropInfo - ドラッグ&ドロップイベント情報
      */
-    const handleEventDrop = (eventDropInfo) => {
+    const handleEventDrop = async (eventDropInfo) => {
         if (eventDropInfo.event.extendedProps.eventType === 'total') {
             const newDate = eventDropInfo.event.startStr;
             const eventExpenseIds = eventDropInfo.event.extendedProps.ids;
 
-            const updatedExpenses = expenses.map(exp => {
-                if (eventExpenseIds.includes(exp.id)) {
-                    return {
-                        ...exp,
-                        date: newDate,
-                    }
-                }
-                return exp;
-            });
+            try {
+                const updatePromises = expenses
+                    .filter(exp => eventExpenseIds.includes(exp.id))
+                    .map(expense =>
+                        fetch(`/api/expenses/${expense.id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application.json',
+                            },
+                            body: JSON.stringify({
+                                ...expense,
+                                selectedCategoryName: expense.selectedCategoryName,
+                                date: newDate,
+                                sortOrder: expense.sortOrder || 0,
+                            }),
+                        })
+                    );
 
-            setExpenses(updatedExpenses);
-            localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
-        } else {
+                await Promise.all(updatePromises);
+
+                const updatedExpenses = expenses.map(exp => {
+                    if (eventExpenseIds.includes(exp.id)) {
+                        return {
+                            ...exp,
+                            date: new Date(newDate),
+                        }
+                    }
+                    return exp;
+                });
+
+                setExpenses(updatedExpenses);
+
+            } catch (error) {
+                console.error('支出の日付更新に失敗しました:', error);
+                alert('支出の日付更新に失敗しました');
+                eventDropInfo.revert();
+            }
+         } else {
             eventDropInfo.revert();
             return;
         }
@@ -343,22 +408,54 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
      * FullCalendarへのドロップ時、
      * ドロップされた要素から支出データを取得し、新支出としてstateへ追加
      */
-    const handleDrop = (dropInfo) => {
+    const handleDrop = async (dropInfo) => {
         const droppedElement = dropInfo.draggedEl;
-
         const expenseData = JSON.parse(droppedElement.getAttribute('data-expense'));
-        const newExpense = {
-            ...expenseData,
-            id: crypto.randomUUID(),
-            date: dropInfo.dateStr,
-        };
 
-        const originalId = expenseData.id;
-        const ExpensesWithoutOriginal = expenses.filter(exp => exp.id !== originalId);
-        const updatedExpenses = [...ExpensesWithoutOriginal, newExpense];
+        try {
+            await fetch(`/api/expenses/${expenseData.id}`, {
+                method: 'DELETE',
+            });
 
-        setExpenses(updatedExpenses);
-        localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
+            const newExpenseData = {
+                date: dropInfo.dateStr,
+                amount: expenseData.amount,
+                memo: expenseData.memo,
+                selectedCategoryName: expenseData.selectedCategoryName,
+                sortOrder: expenses.length,
+            };
+
+            const response = await fetch('/api/expenses', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(newExpenseData),
+            });
+
+            if (response.ok) {
+                const createdExpense = await response.json();
+
+                const expenseForState = {
+                    ...createdExpense,
+                    selectedCategory: expenseData.selectedCategoryName,
+                    selectedCategoryName: expenseData.selectedCategoryName,
+                    color: expenseData.color,
+                    date: new Date(createdExpense.date),
+                };
+
+                const ExpensesWithoutOriginal = expenses.filter(exp => exp.id !== expenseData.id);
+                const updatedExpenses = [...ExpensesWithoutOriginal, expenseForState];
+
+                setExpenses(updatedExpenses);
+            } else {
+                throw new Error('新しい支出の作成に失敗');
+            }
+
+        } catch (error) {
+            console.error('支出のドロップ処理に失敗しました');
+            alert('支出の移動に失敗しました');
+        }
     }
 
     // ================================

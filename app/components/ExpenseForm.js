@@ -80,7 +80,7 @@ export default function ExpenseForm({ categories, expenses, setExpenses, expense
  
         if (Number(expenseData.amount) === 0) {
             if (confirm('金額0円で登録しますか?')) {
-                saveExpenseDataInLocalStorage()
+                saveExpenseDataInDB()
                 return;
             }
         }
