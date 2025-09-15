@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../app/generated/prisma"
 }
 
 datasource db {
@@ -16,24 +15,24 @@ datasource db {
 
 model Expense {
   id                   String   @id @default(uuid())
-  amount               Int
+  amount               Float
   memo                 String?
   selectedCategoryName String
   date                 DateTime
-  sortOrder            Int
+  sortOrder            Int      @default(0)
 }
 
 model Category {
   id        String  @id @default(uuid())
   name      String  @unique
   color     String
-  sortOrder Int
+  sortOrder Int     @default(0)
 }
 
-model budget {
+model Budget {
   id           String  @id @default(uuid())
   amount       Int
   categoryName String
   month        String
-  sortOrder    Int
+  sortOrder    Int     @default(0)
 }

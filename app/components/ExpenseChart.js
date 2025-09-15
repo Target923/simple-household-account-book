@@ -85,8 +85,22 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
     };
 
     // ================================
-    // コールバック関数（計算系）
+    // コールバック関数
     // ================================
+
+    const fetchBudgets = useCallback(async () => {
+        try {
+            const response = await fetch('/api/budgets');
+            if (response.ok) {
+                const budgetsData = await response.json();
+                setBudgets(budgetsData);
+            } else {
+                console.error('予算データの取得に失敗しました');
+            }
+        } catch (error) {
+            console.error('予算データの取得エラー:', error);
+        }
+    }, []);
 
     /**
      * 特定の月とカテゴリの支出合計を計算する関数
@@ -112,7 +126,7 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
     const calculateBudgetStatus = useCallback((targetMonth) => {
         return categories.map(category => {
             const budget = budgets.find(b =>
-                b.categoryId === category.id && b.month === targetMonth
+                b.categoryName === category.name && b.month === targetMonth
             );
 
             if (!budget) {
@@ -152,13 +166,70 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
     }, [budgets, categories, calculateCategoryExpenseForMonth]);
 
     /**
-     * 予算をローカルストレージに保存
-     * @param {Array<object>} newBudgets - 新予算データ
+     * 予算をAPIに保存/更新
+     * @param {string} categoryId - カテゴリID
+     * @param {string} categoryName - カテゴリ名
+     * @param {number} amount - 予算額
+     * @param {string} month - 対象月
      */
-    const saveBudgetsToLocalStorage = useCallback((newBudgets) => {
-        setBudgets(newBudgets);
-        localStorage.setItem('budgets', JSON.stringify(newBudgets));
-    }, []);
+    const saveBudgetsToAPI = useCallback(async (categoryId, categoryName, amount, month) => {
+        try {
+            const existingBudget = budgets.find(b =>
+                b.categoryName === categoryName && b.month === month
+            );
+
+            if (existingBudget) {
+                const response = await fetch(`/api/budgets/${existingBudget.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application.json',
+                    },
+                    body: JSON.stringify({
+                        amount: amount,
+                        categoryName: categoryName,
+                        month: month,
+                        sortOrder: existingBudget.sortOrder || 0,
+                    }),
+                });
+
+                if (response.ok) {
+                    const updatedBudget = await response.json();
+                    setBudgets(prevBudgets =>
+                        prevBudgets.map(b =>
+                            b.id === existingBudget.id ? updatedBudget : b
+                        )
+                    );
+                } else {
+                    const errorData = await response.json();
+                    alert(`予算の更新に失敗しました: ${errorData.error}`);
+                }
+            } else {
+                const response = await fetch('/api/budgets', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        amount: amount,
+                        categoryName: categoryName,
+                        month: month,
+                        sortOrder: budgets.length,
+                    }),
+                });
+
+                if (response.ok) {
+                    const newBudget = await response.json();
+                    setBudgets(prevBudgets => [...prevBudgets, newBudget]);
+                } else {
+                    const errorData = await response.json();
+                    alert(`予算の作成に失敗しました: ${errorData.error}`);
+                }
+            }
+        } catch (error) {
+            console.error('予算の保存に失敗しました:', error);
+            alert('予算の保存に失敗しました');
+        }
+    }, [budgets]);
 
     // ================================
     // Memo計算
@@ -286,32 +357,11 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
      * @param {string} categoryName - カテゴリ名
      * @param {number} amount - 予算額
      */
-    const handleSetBudget = useCallback((categoryId, categoryName, amount) => {
-        const existingBudgetIndex = budgets.findIndex(b =>
-            b.categoryId === categoryId && b.month === currentMonth
-        );
-
-        let newBudgets;
-        if (existingBudgetIndex >= 0) {
-            newBudgets = [...budgets];
-            newBudgets[existingBudgetIndex] = {
-                ...newBudgets[existingBudgetIndex],
-                amount: amount
-            };
-        } else {
-            const newBudget = {
-                categoryId: categoryId,
-                categoryName: categoryName,
-                amount: amount,
-                month: currentMonth
-            };
-            newBudgets = [...budgets, newBudget];
-        }
-
-        saveBudgetsToLocalStorage(newBudgets);
+    const handleSetBudget = useCallback(async (categoryId, categoryName, amount) => {
+        await saveBudgetsToAPI(categoryId, categoryName, amount, currentMonth);
         setEditingBudgetId(null);
         setBudgetInputValue('');
-    }, [budgets, currentMonth, saveBudgetsToLocalStorage]);
+    }, [saveBudgetsToAPI, currentMonth]);
 
     /**
      * フォーカスから外れた際にマイナス値をminで更新
@@ -323,7 +373,6 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
 
         if (inputValue < minAmount) {
             e.target.value = minAmount;
-
             setBudgetInputValue(String(minAmount));
         }
     };
@@ -595,14 +644,11 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
     // ================================
 
     /**
-     * ローカルストレージから予算データ読み込み
+     * コンポーネントマウント時に予算データをAPIから取得
      */
     useEffect(() => {
-        const storedBudgets = localStorage.getItem('budgets');
-        if (storedBudgets) {
-            setBudgets(JSON.parse(storedBudgets));
-        }
-    }, []);
+        fetchBudgets();
+    }, [fetchBudgets]);
 
     /**
      * 円グラフのサイズ管理とリサイズ対応

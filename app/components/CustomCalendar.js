@@ -205,7 +205,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
     const handleDeleteExpense = async (expenseId) => {
         if (confirm('この支出を削除しますか？')) {
             try {
-                const response = await fetch(`api/expenses/${expenseId}`, {
+                const response = await fetch(`/api/expenses/${expenseId}`, {
                     method: 'DELETE',
                 });
 
@@ -281,7 +281,7 @@ export default function CustomCalendar({ expenses, setExpenses, categories, sele
         try {
             const updatePromises = reorderedExpenses.map(async (expense, index) => {
                 if (expense.sortOrder !== index) {
-                    return fetch(`api/expenses/${expense.id}`, {
+                    return fetch(`/api/expenses/${expense.id}`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
