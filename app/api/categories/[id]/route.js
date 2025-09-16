@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma"
 
 export async function PUT(request, { params }) {
-    const id = params.id;
+    const { id } = await params;
     const data = await request.json();
 
     const updatedCategory = await prisma.category.update({
@@ -19,7 +17,7 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-    const id = params.id;
+    const { id } = await params;
 
     await prisma.expense.updateMany({
         where: { selectedCategoryName: { equals: id } },

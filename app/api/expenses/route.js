@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma"
 
 export async function GET() {
     const expenses = await prisma.expense.findMany({
@@ -22,7 +20,7 @@ export async function POST(request) {
         data: {
             amount: parseFloat(data.amount),
             memo: data.memo,
-            selectedCategoryName: data.selectedCategory,
+            selectedCategoryName: data.selectedCategoryName,
             date: new Date(data.date),
             sortOrder: data.sortOrder,
         },

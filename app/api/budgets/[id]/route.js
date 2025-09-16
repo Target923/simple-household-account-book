@@ -1,9 +1,7 @@
-import { PrismaClient } from "@prisma/client"
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma"
 
 export async function PUT(request, { params }) {
-    const id = params.id;
+    const { id } = await params;
     const data = await request.json();
 
     const updatedBudget = await prisma.budget.update({
@@ -20,7 +18,7 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-    const id = params.id;
+    const { id } = await params;
 
     const deletedBudget = await prisma.budget.delete({
         where: { id: id },
@@ -30,7 +28,7 @@ export async function DELETE(request, { params }) {
 }
 
 export async function GET(request, { params }) {
-    const id = params.id;
+    const { id } = await params;
 
     const budget = await prisma.budget.findUnique({
         where: { id: id },

@@ -91,7 +91,7 @@ export default function CategoryForm({ categories, setCategories, expenses, setE
                 }),
             });
 
-            if (response.OK) {
+            if (response.ok) {
                 const updatedCategory = await response.json();
 
                 const updatedCategories = categories.map(cat =>
@@ -137,7 +137,7 @@ export default function CategoryForm({ categories, setCategories, expenses, setE
                 body: JSON.stringify(newCategoryData),
             });
 
-            if (response.OK) {
+            if (response.ok) {
                 const newCategory = await response.json();
                 const updatedCategories = [...categories, newCategory];
                 setCategories(updatedCategories);

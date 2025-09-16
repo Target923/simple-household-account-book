@@ -83,14 +83,15 @@ export default function Home() {
 
           await Promise.all(initialCategoriesPromises);
 
-          setCategories(initialCategories);
+          const updatedCategoriesRes = await fetch('/api/categories');
+          const updatedCategoriesData = await updatedCategoriesRes.json();
+          setCategories(updatedCategoriesData);
         } else {
           setCategories(categoriesData);
         }
 
-        const expensesRes = await fetch('/api/expense');
+        const expensesRes = await fetch('/api/expenses');
         const expensesData = await expensesRes.json();
-
         const parsedExpenses = expensesData.map(exp => ({
           ...exp,
           date: new Date(exp.date),

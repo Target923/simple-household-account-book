@@ -1,9 +1,7 @@
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma"
 
 export async function GET(request, { params }) {
-    const id = params.id;
+    const { id } = await params;
 
     const expense = await prisma.expense.findUnique({
         where: { id: id },
@@ -15,7 +13,7 @@ export async function GET(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
-    const id = params.id;
+    const { id } = await params;
     const data = await request.json();
 
     const updatedExpense = await prisma.expense.update({
@@ -23,7 +21,7 @@ export async function PUT(request, { params }) {
         data: {
             amount: parseFloat(data.amount),
             memo: data.memo,
-            selectedCategoryName: data.selectedCategory,
+            selectedCategoryName: data.selectedCategoryName,
             date: new Date(data.date),
             sortOrder: data.sortOrder,
         },
@@ -33,7 +31,7 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-    const id = params.id;
+    const { id } = await params;
     
     const deleteExpense = await prisma.expense.delete({
         where: { id: id },
