@@ -178,14 +178,16 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
                 b.categoryName === categoryName && b.month === month
             );
 
+            const budgetAmount = parseFloat(amount);
+
             if (existingBudget) {
                 const response = await fetch(`/api/budgets/${existingBudget.id}`, {
                     method: 'PUT',
                     headers: {
-                        'Content-Type': 'application.json',
+                        'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        amount: amount,
+                        amount: budgetAmount,
                         categoryName: categoryName,
                         month: month,
                         sortOrder: existingBudget.sortOrder || 0,
@@ -210,7 +212,7 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        amount: amount,
+                        amount: budgetAmount,
                         categoryName: categoryName,
                         month: month,
                         sortOrder: budgets.length,
