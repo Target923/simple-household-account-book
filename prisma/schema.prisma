@@ -13,26 +13,60 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  name          String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  emailVerified DateTime?
+  image         String?
+
+  expenses      Expense[]
+  categories    Category[]
+  budgets       Budget[]
+}
+
 model Expense {
-  id                   String   @id @default(uuid())
+  id                   String    @id @default(uuid())
   amount               Float
   memo                 String?
   selectedCategoryName String
   date                 DateTime
-  sortOrder            Int      @default(0)
+  sortOrder            Int       @default(0)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  userId               String
+  user                 User      @relation(fields: [userId], references: [id])
 }
 
 model Category {
-  id        String  @id @default(uuid())
-  name      String  @unique
+  id        String    @id @default(uuid())
+  name      String    @unique
   color     String
-  sortOrder Int     @default(0)
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@unique([name, userId])
 }
 
 model Budget {
-  id           String  @id @default(uuid())
+  id           String    @id @default(uuid())
   amount       Int
   categoryName String
   month        String
-  sortOrder    Int     @default(0)
+  sortOrder    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+
+  @@unique([categoryName, month, userId])
 }
