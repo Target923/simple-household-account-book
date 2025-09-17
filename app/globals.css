@@ -69,3 +69,26 @@ a {
 .fc .fc-button:disabled {
   background-color: silver !important;
 }
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px;
+}
+.header button {
+  font-weight: bold;
+  padding: 5px;
+  border: 2px solid aquamarine;
+  border-bottom: 2px solid aqua;
+  border-right: 2px solid aqua;
+  border-radius: 4px;
+  background-color: #171717;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+  font-size: 1em;
+
+  cursor: pointer;
+}
+.header button:hover {
+  border: 2px solid aqua;
+}

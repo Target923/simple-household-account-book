@@ -135,12 +135,10 @@ function HomeContent() {
 
   return (
     <main>
-      <div style={{ textAlign: 'right', padding: '1rem' }}>
-        {/* <title>理想の家計簿 - 複雑な収支管理</title>
-        <meta name="description" content="複雑で使いにくいオンライン家計簿。開発者の理想とエゴがいっぱいの機能を詰め込みました。非常に見づらい。" /> */}
+      <div className='header'>
+        <h1>理想の家計簿</h1>
         <button onClick={() => signOut()}>ログアウト</button>
       </div>
-      <h1>理想の家計簿</h1>
       <hr />
       <CategoryForm
         categories={categories} setCategories={setCategories}

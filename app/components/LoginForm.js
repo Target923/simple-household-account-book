@@ -75,10 +75,13 @@ export default function LoginForm() {
             {success && <p style={{ color: "green" }}>{success}</p>}
             {error && <p style={{ color: "red" }}>{error}</p>}
 
-            <form onSubmit={isRegisterMode ? handleRegister : handleLogin}>
+            <form
+                onSubmit={isRegisterMode ? handleRegister : handleLogin}
+                className={styles.registerForm}
+            >
                 {isRegisterMode && (
                     <div className={styles.loginFormItem}>
-                        <label htmlFor="name">氏名</label>
+                        <label htmlFor="name">ユーザー名</label>
                         <input
                             id="name"
                             type="text"
@@ -89,7 +92,7 @@ export default function LoginForm() {
                     </div>
                 )}
                 <div className={styles.loginFormItem}>
-                    <label htmlFor="email">メールアドレス</label>
+                    <label htmlFor="email">メール</label>
                     <input
                         id="email"
                         type="email"
@@ -108,14 +111,14 @@ export default function LoginForm() {
                         required
                     />
                 </div>
-                <button type="submit" className={styles.loginFormItem}>
+                <button type="submit">
                     {isRegisterMode ? '登録' : 'ログイン'}
                 </button>
             </form>
             
             <div className={styles.loginFormNavigation}>
                 <button onClick={() => setIsRegisterMode(!isRegisterMode)}>
-                    {isRegisterMode ? 'ログイン' : '新規登録'}
+                    {isRegisterMode ? 'ログイン画面へ' : '新規登録画面へ'}
                 </button>
             </div>
         </div>
