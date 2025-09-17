@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { signIn } from 'next-auth/react';
-import { userRouter } from 'next/navigation';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
+
+import styles from './LoginForm.module.css';
 
 export default function LoginForm() {
     const [isRegisterMode, setIsRegisterMode] = useState(false);
@@ -14,7 +15,7 @@ export default function LoginForm() {
     const [success, setSuccess] = useState('');
     const router = useRouter();
 
-    const handleSubmit = async (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
         setSuccess('');
@@ -69,10 +70,25 @@ export default function LoginForm() {
     };
 
     return (
-        <div>
-            <h2>ログイン</h2>
-            <form onSubmit={handleSubmit}>
-                <div>
+        <div className={styles.loginForm}>
+            <h2>{isRegisterMode ? '新規登録' : 'ログイン'}</h2>
+            {success && <p style={{ color: "green" }}>{success}</p>}
+            {error && <p style={{ color: "red" }}>{error}</p>}
+
+            <form onSubmit={isRegisterMode ? handleRegister : handleLogin}>
+                {isRegisterMode && (
+                    <div className={styles.loginFormItem}>
+                        <label htmlFor="name">氏名</label>
+                        <input
+                            id="name"
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            required
+                        />
+                    </div>
+                )}
+                <div className={styles.loginFormItem}>
                     <label htmlFor="email">メールアドレス</label>
                     <input
                         id="email"
@@ -82,7 +98,7 @@ export default function LoginForm() {
                         required
                     />
                 </div>
-                <div>
+                <div className={styles.loginFormItem}>
                     <label htmlFor="password">パスワード</label>
                     <input
                         id="password"
@@ -92,9 +108,16 @@ export default function LoginForm() {
                         required
                     />
                 </div>
-                <button type="submit">ログイン</button>
+                <button type="submit" className={styles.loginFormItem}>
+                    {isRegisterMode ? '登録' : 'ログイン'}
+                </button>
             </form>
-            {error && <p style={{ color: "red" }}>{error}</p>}
+            
+            <div className={styles.loginFormNavigation}>
+                <button onClick={() => setIsRegisterMode(!isRegisterMode)}>
+                    {isRegisterMode ? 'ログイン' : '新規登録'}
+                </button>
+            </div>
         </div>
     );
 }

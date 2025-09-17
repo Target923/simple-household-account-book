@@ -76,44 +76,46 @@ function HomeContent() {
    */
   useEffect(() => {
     async function fetchData() {
-      try {
-        const categoriesRes = await fetch('/api/categories');
-        const categoriesData = await categoriesRes.json();
+      if (status === "authenticated") {
+        try {
+          const categoriesRes = await fetch('/api/categories');
+          const categoriesData = await categoriesRes.json();
 
-        if (categoriesData.length === 0) {
-          const initialCategories = [
-            { name: '食費', color: CATEGORY_COLORS[0], sortOrder: 0 },
-            { name: '交通費', color: CATEGORY_COLORS[1], sortOrder: 1 },
-            { name: '日用品', color: CATEGORY_COLORS[2], sortOrder: 2 },
-          ];
+          if (categoriesData.length === 0) {
+            const initialCategories = [
+              { name: '食費', color: CATEGORY_COLORS[0], sortOrder: 0 },
+              { name: '交通費', color: CATEGORY_COLORS[1], sortOrder: 1 },
+              { name: '日用品', color: CATEGORY_COLORS[2], sortOrder: 2 },
+            ];
 
-          const initialCategoriesPromises = initialCategories.map(cat =>
-            fetch('/api/categories', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(cat),
-            })
-          );
+            const initialCategoriesPromises = initialCategories.map(cat =>
+              fetch('/api/categories', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(cat),
+              })
+            );
 
-          await Promise.all(initialCategoriesPromises);
+            await Promise.all(initialCategoriesPromises);
 
-          const updatedCategoriesRes = await fetch('/api/categories');
-          const updatedCategoriesData = await updatedCategoriesRes.json();
-          setCategories(updatedCategoriesData);
-        } else {
-          setCategories(categoriesData);
+            const updatedCategoriesRes = await fetch('/api/categories');
+            const updatedCategoriesData = await updatedCategoriesRes.json();
+            setCategories(updatedCategoriesData);
+          } else {
+            setCategories(categoriesData);
+          }
+
+          const expensesRes = await fetch('/api/expenses');
+          const expensesData = await expensesRes.json();
+          const parsedExpenses = expensesData.map(exp => ({
+            ...exp,
+            date: new Date(exp.date),
+          }))
+
+          setExpenses(parsedExpenses);
+        } catch (error) {
+          console.error('データの取得または初期化に失敗しました:', error);
         }
-
-        const expensesRes = await fetch('/api/expenses');
-        const expensesData = await expensesRes.json();
-        const parsedExpenses = expensesData.map(exp => ({
-          ...exp,
-          date: new Date(exp.date),
-        }))
-
-        setExpenses(parsedExpenses);
-      } catch (error) {
-        console.error('データの取得または初期化に失敗しました:', error);
       }
     }
     fetchData();
