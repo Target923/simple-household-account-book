@@ -70,9 +70,9 @@ export default function CategoryForm({ categories, expenses, expenseData, setExp
     });
 
     /**
-     * カテゴリ更新用ミューテーション
+     * カテゴリ名更新用ミューテーション
      */
-    const updateMutation = useMutation({
+    const updateNameMutation = useMutation({
         mutationFn: async (updatedData) => {
             const { categoryId, newName } = updatedData;
             const currentCategory = categories.find(cat => cat.id === categoryId);
@@ -100,6 +100,13 @@ export default function CategoryForm({ categories, expenses, expenseData, setExp
             alert(`カテゴリーの更新に失敗しました: ${error.message}`);
         }
     });
+
+    /**
+     * カテゴリカラー更新用ミューテーション
+     */
+    const updateColorMutation = useMutation({
+        mutationFn:
+    })
 
     /**
      * 入力フォームの値変更時、categoryNameの状態を更新
@@ -148,9 +155,8 @@ export default function CategoryForm({ categories, expenses, expenseData, setExp
     /**
      * カテゴリ編集保存ハンドラ
      * @param {string} categoryId - 編集中ID
-     * @param {string} originalName - 元のカテゴリ名
      */
-    const handleSaveEdit = async (categoryId, originalName) => {
+    const handleSaveEdit = async (categoryId) => {
         if (!editingCategory?.name) {
             setEditingCategory('');
             return;
@@ -164,13 +170,11 @@ export default function CategoryForm({ categories, expenses, expenseData, setExp
         };
 
         try {
-            await updateMutation.mutateAsync({ categoryId, newName: editingCategory.name });
+            await updateNameMutation.mutateAsync({ categoryId, newName: editingCategory.name });
         } catch (error) {
 
         }
-
-        setEditingCategory('');
-    }
+    };
     
     /**
      * 新しいカテゴリを生成し、DBとstateの両方を更新
@@ -187,7 +191,7 @@ export default function CategoryForm({ categories, expenses, expenseData, setExp
                 sortOrder: categories.length,
             });
         } catch (error) {
-            // console.error('カテゴリの保存に失敗しました:', error);
+
         }
     }
 
@@ -223,26 +227,10 @@ export default function CategoryForm({ categories, expenses, expenseData, setExp
     async function handleDelete(categoryId, categoryName) {
         if (confirm(`${categoryName}を削除しますか？`)) {
             try {
-                const response = await fetch(`/api/categories/${categoryId}`, {
-                    method: 'DELETE',
-                });
-
-                if (response.ok) {
-                    const updatedCategories = categories.filter(cat => cat.id !== categoryId);
-                    setCategories(updatedCategories);
-
-                    if (expenseData.selectedCategory === categoryName) {
-                        setExpenseData(prevExpenseData => ({
-                            ...prevExpenseData,
-                            selectedCategory: '',
-                            color: '',
-                        }));
-                    }
-                }
-
+                await deleteMutation.mutateAsync(categoryId);
                 await deleteBudgetsByCategory(categoryName);
             } catch (error) {
-                console.error('カテゴリの削除に失敗しました:', error);
+
             }
         }
     }
@@ -292,34 +280,7 @@ export default function CategoryForm({ categories, expenses, expenseData, setExp
      */
     const handleColorChange = async (categoryId, newColor) => {
         try {
-            const currentCategory = categories.find(cat => cat.id === categoryId);
-            const response = await fetch(`/api/categories/${categoryId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: currentCategory.name,
-                    color: newColor,
-                    sortOrder: currentCategory.sortOrder,
-                }),
-            });
-
-            if (response.ok) {
-                const updatedCategory = await response.json();
-                const updatedCategories = categories.map(cat =>
-                    cat.id === categoryId ? updatedCategory : cat
-                );
-                setCategories(updatedCategories);
-
-                if (expenseData.selectedCategory === currentCategory.name) {
-                    setExpenseData(prev => ({ ...prev, color: newColor }));
-                }
-
-                if (isEditMode && editingExpense?.selectedCategoryName === currentCategory.name) {
-                    setEditingExpense(prev => ({ ...prev, color: newColor }));
-                }
-            }
+            await updateColorMutation.mutateAsync()
         } catch (error) {
             console.error('カテゴリーの色更新に失敗しました', error);
         }
