@@ -45,7 +45,7 @@ model Expense {
 
 model Category {
   id        String    @id @default(uuid())
-  name      String    @unique
+  name      String
   color     String
   sortOrder Int       @default(0)
   createdAt DateTime  @default(now())
