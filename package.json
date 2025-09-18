@@ -16,6 +16,7 @@
     "@fullcalendar/interaction": "^6.1.19",
     "@fullcalendar/react": "^6.1.19",
     "@prisma/client": "^6.16.1",
+    "@tanstack/react-query": "^5.89.0",
     "bcryptjs": "^3.0.2",
     "calendar-react": "^0.2.2",
     "next": "15.4.6",

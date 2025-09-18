@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { SwatchesPicker } from './SwatchesPicker'
 
 import styles from './CategoryForm.module.css';
@@ -9,12 +10,96 @@ import { IoTrashBin } from 'react-icons/io5';
 import { IoColorPaletteSharp } from "react-icons/io5";
 import { MdModeEdit } from "react-icons/md";
 
-export default function CategoryForm({ categories, setCategories, expenses, setExpenses, expenseData, setExpenseData, editingExpense, setEditingExpense, isEditMode, setIsEditMode }) {
+export default function CategoryForm({ categories, expenses, expenseData, setExpenseData, editingExpense, setEditingExpense, isEditMode, setIsEditMode }) {
+
+    const queryClient = useQueryClient();
+
     const [categoryName, setCategoryName] = useState('');
     const [placeholder, setPlaceholder] = useState('新規カテゴリー')
 
     const [editingCategory, setEditingCategory] = useState('');
     const [editingColorId, setEditingColorId] = useState(null);
+
+    // ================================
+    // useMutationでデータ更新を定義
+    // ================================
+
+    /**
+     * カテゴリ登録用ミューテーション
+     */
+    const createMutation = useMutation({
+        mutationFn: async (newCategory) => {
+            const response = await fetch('/api/categories', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newCategory),
+            });
+            if (!response.ok) {
+                throw new Error('カテゴリーの登録に失敗しました');
+            }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['categories']);
+            setCategoryName('');
+            setPlaceholder('新規カテゴリー');
+        },
+        onError: (error) => {
+            alert(`カテゴリーの登録に失敗しました: ${error.message}`);
+        }
+    });
+
+    /**
+     * カテゴリ削除用ミューテーション
+     */
+    const deleteMutation = useMutation({
+        mutationFn: async (categoryId) => {
+            const response = await fetch(`/api/categories/${categoryId}`, {
+                method: 'DELETE',
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'カテゴリーの削除に失敗しました');
+            }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['categories']);
+        },
+        onError: (error) => {
+            alert(`カテゴリーの削除に失敗しました: ${error.message}`);
+        }
+    });
+
+    /**
+     * カテゴリ更新用ミューテーション
+     */
+    const updateMutation = useMutation({
+        mutationFn: async (updatedData) => {
+            const { categoryId, newName } = updatedData;
+            const currentCategory = categories.find(cat => cat.id === categoryId);
+
+            const response = await fetch(`/api/categories/${categoryId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: newName,
+                    color: currentCategory.color,
+                    sortOrder: currentCategory.sortOrder,
+                }),
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'カテゴリーの更新に失敗しました');
+            }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['categories']);
+            queryClient.invalidateQueries(['expenses']);
+            setEditingCategory('');
+        },
+        onError: (error) => {
+            alert(`カテゴリーの更新に失敗しました: ${error.message}`);
+        }
+    });
 
     /**
      * 入力フォームの値変更時、categoryNameの状態を更新
@@ -61,7 +146,7 @@ export default function CategoryForm({ categories, setCategories, expenses, setE
     }
 
     /**
-     * 編集したカテゴリー名を保存
+     * カテゴリ編集保存ハンドラ
      * @param {string} categoryId - 編集中ID
      * @param {string} originalName - 元のカテゴリ名
      */
@@ -74,41 +159,14 @@ export default function CategoryForm({ categories, setCategories, expenses, setE
         const isCategoryExists = categories.some(cat => cat.name === editingCategory.name && cat.id !== categoryId);
         if (isCategoryExists) {
             setEditingCategory('');
+            alert(`${editingCategory.name}は既に存在します`);
             return
         };
 
         try {
-            const currentCategory = categories.find(cat => cat.id === categoryId);
-            const response = await fetch(`/api/categories/${categoryId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: editingCategory.name,
-                    color: currentCategory.color,
-                    sortOrder: currentCategory.sortOrder,
-                }),
-            });
-
-            if (response.ok) {
-                const updatedCategory = await response.json();
-
-                const updatedCategories = categories.map(cat =>
-                    cat.id === categoryId ? updatedCategory : cat
-                );
-                setCategories(updatedCategories);
-
-                const updatedExpenses = expenses.map(exp =>
-                    exp.selectedCategoryName === originalName ?
-                    { ...exp, selectedCategory: editingCategory.name, selectedCategoryName: editingCategory.name } :
-                    exp
-                );
-
-                setExpenses(updatedExpenses);
-            }
+            await updateMutation.mutateAsync({ categoryId, newName: editingCategory.name });
         } catch (error) {
-            console.error('カテゴリーの更新に失敗しました:', error);
+
         }
 
         setEditingCategory('');
@@ -123,28 +181,13 @@ export default function CategoryForm({ categories, setCategories, expenses, setE
         if (isCategoryExists) return;
 
         try {
-            const newCategoryData = {
+            await createMutation.mutateAsync({
                 name: categoryName,
                 color: CATEGORY_COLORS[categories.length % CATEGORY_COLORS.length],
                 sortOrder: categories.length,
-            };
-
-            const response = await fetch('/api/categories', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(newCategoryData),
             });
-
-            if (response.ok) {
-                const newCategory = await response.json();
-                const updatedCategories = [...categories, newCategory];
-                setCategories(updatedCategories);
-                setCategoryName('');
-            }
         } catch (error) {
-            console.error('カテゴリの保存に失敗しました:', error);
+            // console.error('カテゴリの保存に失敗しました:', error);
         }
     }
 
