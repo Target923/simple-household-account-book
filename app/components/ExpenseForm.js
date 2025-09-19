@@ -23,16 +23,45 @@ export default function ExpenseForm({ categories, expenses, expenseData, setExpe
                 const errorData = await response.json();
                 throw new Error(errorData.error || '支出の保存に失敗しました');
             }
+            return response.json();
+        },
+        onMutate: async (newExpenseData) => {
+            await queryClient.cancelQueries({ queryKey: ['expenses'] });
+            const prevExpenses = queryClient.getQueryData(['expenses']);
+
+            const tempId = `temp-${Date.now()}`;
+            const optimisticExpense = { ...newExpenseData, id: tempId };
+
+            queryClient.setQueryData(['expenses'], (oldExpenses) => {
+                return oldExpenses ? [...oldExpenses, optimisticExpense] : [optimisticExpense];
+            });
+
+            return { prevExpenses };
+        },
+        onError: (error, context) => {
+            queryClient.setQueryData(['expenses'], context.prevExpenses);
+            alert(error.message);
         },
         onSuccess: (newlyCreatedExpense) => {
-            queryClient.setQueryData(['expenses'], (oldExpense) => {
-                return oldExpense ? [...oldExpense, newlyCreatedExpense] : [newlyCreatedExpense];
-            })
+            queryClient.setQueryData(['expenses'], (oldExpenses) => {
+                if (!oldExpenses) return [newlyCreatedExpense];
+
+                const tempId = `temp-${Date.now()}`;
+                const existingTempExpenseIndex = oldExpenses.findIndex(exp => exp.id === tempId);
+
+                if (existingTempExpenseIndex !== -1) {
+                    const updatedExpenses = [...oldExpenses];
+                    updatedExpenses[existingTempExpenseIndex] = newlyCreatedExpense;
+                    return updatedExpenses;
+                }
+
+                return [...oldExpenses, newlyCreatedExpense];
+            });
             setExpenseData({ ...expenseData, amount: '', memo: '', });
         },
-        onError: (error) => {
-            alert(error.message);
-        }
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ['expenses'] });
+        },
     });
 
     const updateExpenseMutation = useMutation({

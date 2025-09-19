@@ -208,23 +208,36 @@ export default function CustomCalendar({ expenses, categories, selectedDate, set
      * 支出更新用ミューテーション（日付移動/並び順）
      */
     const updateMutation = useMutation({
-        mutationFn: async (updatedExpense) => {
-            const response = await fetch(`/api/expenses/${updatedExpense.id}`, {
+        mutationFn: async (id, updatedExpenseData) => {
+            const response = await fetch(`/api/expenses/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updatedExpense),
+                body: JSON.stringify(updatedExpenseData),
             });
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || '支出の更新に失敗しました');
             }
+            return response.json();
+        },
+        onMutate: async ({ id, updatedExpenseData }) => {
+            await queryClient.cancelQueries({ queryKey: ['expenses'] });
+            const prevExpenses = queryClient.getQueryData(['expenses']);
+
+            queryClient.setQueryData(['expenses'], (oldExpenses) => {
+                if (!oldExpenses) return [];
+                return oldExpenses.map(exp => exp.id === id ? { ...exp, ...updatedExpenseData }: exp,);
+            });
+
+            return { prevExpenses };
+        },
+        onError: (error, context) => {
+            queryClient.setQueryData(['expenses'], context.prevExpenses);
+            alert(`${error.message}`);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['expenses']);
+            queryClient.invalidateQueries({ queryKey: ['expenses'] });
         },
-        onError: (error) => {
-            alert(`${error.message}`);
-        }
     });
 
     /**
@@ -336,13 +349,13 @@ export default function CustomCalendar({ expenses, categories, selectedDate, set
         if (draggingItemIndex === null) return;
 
         await Promise.all(
-            reorderedExpenses.map(async (expense, index) => {
-                if (expense.sortOrder !== index) {
-                    const updatedExpense = {
-                        ...expense,
+            reorderedExpenses.map(async (exp, index) => {
+                if (exp.sortOrder !== index) {
+                    const updatedExpenseData = {
+                        ...exp,
                         sortOrder: index,
                     };
-                    return updateMutation.mutateAsync(updatedExpense);
+                    return updateMutation.mutateAsync(exp.id, updatedExpenseData);
                 }
             }).filter(p => p !== undefined)
         );
@@ -400,7 +413,7 @@ export default function CustomCalendar({ expenses, categories, selectedDate, set
                             ...expense,
                             date: newDate,
                         };
-                        return updateMutation.mutateAsync(updatedExpense);
+                        return updateMutation.mutateAsync(exp.id, updatedExpense);
                     })
             );
          } else {
