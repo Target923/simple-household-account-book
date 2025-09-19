@@ -2,8 +2,6 @@ import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 
-import { CATEGORY_COLORS } from "../../components/category_colors";
-
 export async function GET() {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
@@ -12,22 +10,6 @@ export async function GET() {
     }
 
     try {
-        const hasAnyCategory = await prisma.category.findFirst({
-            where: { userId: userId },
-        });
-
-        if (!hasAnyCategory) {
-            const initialCategories = [
-                { name: '食費', color: CATEGORY_COLORS[0], sortOrder: 0, userId: userId },
-                { name: '交通費', color: CATEGORY_COLORS[1], sortOrder: 1, userId: userId },
-                { name: '日用品', color: CATEGORY_COLORS[2], sortOrder: 2, userId: userId },
-            ];
-
-            await prisma.category.createMany({
-                data: initialCategories,
-            });
-        }
-
         const categories = await prisma.category.findMany({
             where: { userId: userId },
             orderBy: { sortOrder: 'asc' },

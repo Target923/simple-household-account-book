@@ -12,12 +12,8 @@ export async function GET() {
     try {
         const expenses = await prisma.expense.findMany({
             orderBy: [
-                {
-                    date: 'asc',
-                },
-                {
-                    sortOrder: 'asc',
-                },
+                { date: 'asc' },
+                { sortOrder: 'asc' },
             ],
             where: {
                 userId: userId,

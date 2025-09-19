@@ -188,9 +188,7 @@ export default function CustomCalendar({ expenses, categories, selectedDate, set
      */
     const deleteMutation = useMutation({
         mutationFn: async (expenseId) => {
-            const response = await fetch(`/api/expenses/${expenseId}`, {
-                method: 'DELETE',
-            });
+            const response = await fetch(`/api/expenses/${expenseId}`, { method: 'DELETE' });
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || '支出の削除に失敗しました');
@@ -201,7 +199,8 @@ export default function CustomCalendar({ expenses, categories, selectedDate, set
             setExpandedExpenseId(null);
         },
         onError: (error) => {
-            alert(`支出の削除に失敗しました: ${error.message}`);
+            alert(`${error.message}`);
+            info.revert();
         }
     });
 
@@ -224,7 +223,7 @@ export default function CustomCalendar({ expenses, categories, selectedDate, set
             queryClient.invalidateQueries(['expenses']);
         },
         onError: (error) => {
-            alert(`支出の更新に失敗しました: ${error.message}`);
+            alert(`${error.message}`);
         }
     });
 
@@ -239,14 +238,14 @@ export default function CustomCalendar({ expenses, categories, selectedDate, set
                 body: JSON.stringify(newExpenseData),
             });
             if (!response.ok) {
-                throw new Error('新規支出の作成に失敗');
+                throw new Error('新規支出の作成に失敗しました');
             }
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['expenses']);
         },
         onError: (error) => {
-            alert(`新規支出の作成に失敗しました: ${error.message}`);
+            alert(`${error.message}`);
         }
     });
 
@@ -277,11 +276,7 @@ export default function CustomCalendar({ expenses, categories, selectedDate, set
      */
     const handleDeleteExpense = async (expenseId) => {
         if (confirm('この支出を削除しますか？')) {
-            try {
-                await deleteMutation.mutateAsync(expenseId);
-            } catch (error) {
-
-            }
+            await deleteMutation.mutateAsync(expenseId);
         }
     };
 
@@ -340,23 +335,17 @@ export default function CustomCalendar({ expenses, categories, selectedDate, set
     const handleMouseUp = useCallback(async () => {
         if (draggingItemIndex === null) return;
 
-        try {
-            await Promise.all(
-                reorderedExpenses.map(async (expense, index) => {
-                    if (expense.sortOrder !== index) {
-                        const updatedExpense = {
-                            ...expense,
-                            sortOrder: index,
-                        };
-                        return updateMutation.mutateAsync(updatedExpense);
-                    }
-                }).filter(p => p !== undefined)
-            );
-        } catch (error) {
-            console.error('並び順の更新に失敗しました:', error);
-            alert('並び順の更新に失敗しました');
-        }
-
+        await Promise.all(
+            reorderedExpenses.map(async (expense, index) => {
+                if (expense.sortOrder !== index) {
+                    const updatedExpense = {
+                        ...expense,
+                        sortOrder: index,
+                    };
+                    return updateMutation.mutateAsync(updatedExpense);
+                }
+            }).filter(p => p !== undefined)
+        );
         setDraggingItemIndex(null);
         setDragOverItemIndex(null);
     }, [draggingItemIndex, reorderedExpenses, updateMutation]);
@@ -396,32 +385,26 @@ export default function CustomCalendar({ expenses, categories, selectedDate, set
 
     /**
      * イベントのドラッグ&ドロップハンドラ
-     * @param {object} eventDropInfo - ドラッグ&ドロップイベント情報
+     * @param {object} info - ドラッグ&ドロップイベント情報
      */
-    const handleEventDrop = async (eventDropInfo) => {
-        if (eventDropInfo.event.extendedProps.eventType === 'total') {
-            const newDate = eventDropInfo.event.startStr;
-            const eventExpenseIds = eventDropInfo.event.extendedProps.ids;
+    const handleEventDrop = async (info) => {
+        if (info.event.extendedProps.eventType === 'total') {
+            const newDate = info.event.startStr;
+            const eventExpenseIds = info.event.extendedProps.ids;
 
-            try {
-                await Promise.all(
-                    expenses
-                        .filter(exp => eventExpenseIds.includes(exp.id))
-                        .map(expense => {
-                            const updatedExpense = {
-                                ...expense,
-                                date: newDate,
-                            };
-                            return updateMutation.mutateAsync(updatedExpense);
-                        })
-                );
-            } catch (error) {
-                console.error('支出の日付更新に失敗しました:', error);
-                alert('支出の日付更新に失敗しました');
-                eventDropInfo.revert();
-            }
+            await Promise.all(
+                expenses
+                    .filter(exp => eventExpenseIds.includes(exp.id))
+                    .map(expense => {
+                        const updatedExpense = {
+                            ...expense,
+                            date: newDate,
+                        };
+                        return updateMutation.mutateAsync(updatedExpense);
+                    })
+            );
          } else {
-            eventDropInfo.revert();
+            info.revert();
             return;
         }
     };
@@ -435,19 +418,14 @@ export default function CustomCalendar({ expenses, categories, selectedDate, set
         const droppedElement = dropInfo.draggedEl;
         const expenseData = JSON.parse(droppedElement.getAttribute('data-expense'));
 
-        try {
-            await deleteMutation.mutateAsync(expenseData.id);
-            await createMutation.mutateAsync({
-                date: dropInfo.dateStr,
-                amount: expenseData.amount,
-                memo: expenseData.memo,
-                selectedCategoryName: expenseData.selectedCategoryName,
-                sortOrder: expenses.length,
-            });
-        } catch (error) {
-            console.error('支出のドロップ処理に失敗しました');
-            alert('支出の移動に失敗しました');
-        }
+        await deleteMutation.mutateAsync(expenseData.id);
+        await createMutation.mutateAsync({
+            date: dropInfo.dateStr,
+            amount: expenseData.amount,
+            memo: expenseData.memo,
+            selectedCategoryName: expenseData.selectedCategoryName,
+            sortOrder: expenses.length,
+        });
     }
 
     // ================================

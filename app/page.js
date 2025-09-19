@@ -1,7 +1,7 @@
 'use client';
 import '../app/globals.css'
-import React, { useState } from "react";
-import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React, { useState, useEffect } from "react";
+import { useQuery, QueryClient, QueryClientProvider, useMutation } from '@tanstack/react-query';
 import { SessionProvider, useSession, signOut } from "next-auth/react";
 
 import CategoryForm from "./components/CategoryForm";
@@ -9,6 +9,8 @@ import ExpenseForm from "./components/ExpenseForm";
 import CustomCalendar from "./components/CustomCalendar";
 import ExpenseChart from "./components/ExpenseChart";
 import LoginForm from './components/LoginForm';
+
+import { CATEGORY_COLORS } from "../../components/category_colors";
 
 /**
  * QueryClientインスタンス作成
@@ -49,6 +51,14 @@ async function fetchExpenses() {
   }));
 }
 
+async function fetchBudgets() {
+  const res = await fetch('/api/budgets');
+  if (!res.ok) {
+    throw new Error('予算データの取得に失敗しました');
+  }
+  return res.json();
+}
+
 /**
  * ホームコンポーネントロジック
  * @returns {JSX.Element} アプリケーションのJSXエレメント
@@ -59,11 +69,18 @@ function HomeContent() {
   const { data: categories, isPending: isCategoriesPending, error: categoriesError } = useQuery({
     queryKey: ['categories'],
     queryFn: fetchCategories,
+    enabled: status === 'authenticated', // 認証済みの場合
   });
   const { data: expenses, isPending: isExpensesPending, error: expensesError } = useQuery({
     queryKey: ['expenses'],
     queryFn: fetchExpenses,
-  })
+    enabled: status === 'authenticated',
+  });
+  const { data: budgets, isPending: isBudgetsPending, error: budgetsError } = useQuery({
+    queryKey: ['budgets'],
+    queryFn: fetchBudgets,
+    enabled: status === 'authenticated',
+  });
 
   /**
    * 支出データ管理state
@@ -95,6 +112,32 @@ function HomeContent() {
    */
   const [isEditMode, setIsEditMode] = useState(false);
 
+  const createInititalCategoriesMutation = useMutation({
+    mutationFn: async (initialCategories) => {
+      await Promise.all(initialCategories.map(cat =>
+        fetch('/api/categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cat),
+        })
+      ));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['categories']);
+    }
+  });
+
+  useEffect(() => {
+    if (status === 'authenticated' && !isCategoriesPending && categories && categories.length === 0) {
+      const initialCategories = [
+        { name: '食費', color: CATEGORY_COLORS[0], sortOrder: 0 },
+        { name: '交通費', color: CATEGORY_COLORS[1], sortOrder: 1 },
+        { name: '日用品', color: CATEGORY_COLORS[2], sortOrder: 2 },
+      ];
+      createInititalCategoriesMutation.mutate(initialCategories);
+    }
+  }, [status, isCategoriesPending, categories, createInititalCategoriesMutation]);
+
   if (status === 'loading') {
     return <div>Loading...</div>;
   }
@@ -104,10 +147,10 @@ function HomeContent() {
     );
   }
 
-  if (isCategoriesPending || isExpensesPending) {
+  if (isCategoriesPending || isExpensesPending || isBudgetsPending) {
     return <div>データを読み込み中...</div>;
   }
-  if (categoriesError || expensesError) {
+  if (categoriesError || expensesError || budgetsError) {
     return <div>エラーが発生しました: {categoriesError?.message || expensesError?.message}</div>;
   }
 
@@ -120,9 +163,7 @@ function HomeContent() {
       <hr />
       <CategoryForm
         categories={categories}
-        // setCategories={setCategories}
-        expenses={expenses}
-        // setExpenses={setExpenses}
+        budgets={budgets}
         expenseData={expenseData} setExpenseData={setExpenseData }
         editingExpense={editingExpense} setEditingExpense={setEditingExpense}
         isEditMode={isEditMode} setIsEditMode={setIsEditMode} />

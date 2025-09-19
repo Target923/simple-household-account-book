@@ -10,7 +10,7 @@ import { IoTrashBin } from 'react-icons/io5';
 import { IoColorPaletteSharp } from "react-icons/io5";
 import { MdModeEdit } from "react-icons/md";
 
-export default function CategoryForm({ categories, expenses, expenseData, setExpenseData, editingExpense, setEditingExpense, isEditMode, setIsEditMode }) {
+export default function CategoryForm({ categories, budgets, expenseData, setExpenseData, editingExpense, setEditingExpense, isEditMode, setIsEditMode }) {
 
     const queryClient = useQueryClient();
 
@@ -44,18 +44,16 @@ export default function CategoryForm({ categories, expenses, expenseData, setExp
             setPlaceholder('新規カテゴリー');
         },
         onError: (error) => {
-            alert(`カテゴリーの登録に失敗しました: ${error.message}`);
+            alert(`${error.message}`);
         }
     });
 
     /**
      * カテゴリ削除用ミューテーション
      */
-    const deleteMutation = useMutation({
+    const deleteCategoryMutation = useMutation({
         mutationFn: async (categoryId) => {
-            const response = await fetch(`/api/categories/${categoryId}`, {
-                method: 'DELETE',
-            });
+            const response = await fetch(`/api/categories/${categoryId}`, { method: 'DELETE' });
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'カテゴリーの削除に失敗しました');
@@ -63,9 +61,10 @@ export default function CategoryForm({ categories, expenses, expenseData, setExp
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['categories']);
+            queryClient.invalidateQueries(['budgets']);
         },
         onError: (error) => {
-            alert(`カテゴリーの削除に失敗しました: ${error.message}`);
+            alert(`${error.message}`);
         }
     });
 
@@ -97,7 +96,7 @@ export default function CategoryForm({ categories, expenses, expenseData, setExp
             setEditingCategory('');
         },
         onError: (error) => {
-            alert(`カテゴリーの更新に失敗しました: ${error.message}`);
+            alert(`${error.message}`);
         }
     });
 
@@ -105,8 +104,45 @@ export default function CategoryForm({ categories, expenses, expenseData, setExp
      * カテゴリカラー更新用ミューテーション
      */
     const updateColorMutation = useMutation({
-        mutationFn:
-    })
+        mutationFn: async ({ categoryId, newColor }) => {
+            const currentCategory = categories.find(cat => cat.id === categoryId);
+            const response = await fetch(`/api/categories/${categoryId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: currentCategory.name,
+                    color: newColor,
+                    sortOrder: currentCategory.sortOrder,
+                }),
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'カテゴリーカラーの更新に失敗しました');
+            }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['categories']);
+            queryClient.invalidateQueries(['expenses']);
+            setEditingColorId(null);
+        },
+        onError: (error) => {
+            alert(`${error.message}`);
+        }
+    });
+
+    const deleteBudgetMutation = useMutation({
+        mutationFn: async (categoryName) => {
+            await Promise.all((budgets.filter(budget => budget.categoryName === categoryName)).map(budget =>
+                fetch(`/api/budgets/${budget.id}`, { method: 'DELETE' })
+            ));
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['budgets']);
+        },
+        onError: (error) => {
+            alert(`${error.message}`);
+        } 
+    });
 
     /**
      * 入力フォームの値変更時、categoryNameの状態を更新
@@ -169,11 +205,7 @@ export default function CategoryForm({ categories, expenses, expenseData, setExp
             return
         };
 
-        try {
-            await updateNameMutation.mutateAsync({ categoryId, newName: editingCategory.name });
-        } catch (error) {
-
-        }
+        await updateNameMutation.mutateAsync({ categoryId, newName: editingCategory.name });
     };
     
     /**
@@ -184,15 +216,11 @@ export default function CategoryForm({ categories, expenses, expenseData, setExp
         const isCategoryExists = categories.some(cat => cat.name === categoryName);
         if (isCategoryExists) return;
 
-        try {
-            await createMutation.mutateAsync({
-                name: categoryName,
-                color: CATEGORY_COLORS[categories.length % CATEGORY_COLORS.length],
-                sortOrder: categories.length,
-            });
-        } catch (error) {
-
-        }
+        await createMutation.mutateAsync({
+            name: categoryName,
+            color: CATEGORY_COLORS[categories.length % CATEGORY_COLORS.length],
+            sortOrder: categories.length,
+        });
     }
 
     /**
@@ -226,37 +254,8 @@ export default function CategoryForm({ categories, expenses, expenseData, setExp
      */
     async function handleDelete(categoryId, categoryName) {
         if (confirm(`${categoryName}を削除しますか？`)) {
-            try {
-                await deleteMutation.mutateAsync(categoryId);
-                await deleteBudgetsByCategory(categoryName);
-            } catch (error) {
-
-            }
-        }
-    }
-
-    /**
-     * 指定されたカテゴリの予算データ削除
-     * @param {string} categoryName - 削除対象のカテゴリ名
-     */
-    async function deleteBudgetsByCategory(categoryName) {
-        try {
-            const budgetsResponse = await fetch('/api/budgets');
-            
-            if (budgetsResponse.ok) {
-                const budgets = await budgetsResponse.json();
-                const targetBudgets = budgets.filter(budget => budget.categoryName === categoryName);
-
-                const deletePromises = targetBudgets.map(budget =>
-                    fetch(`/api/budgets/${budget.id}`, {
-                        method: 'DELETE',
-                    })
-                );
-
-                await Promise.all(deletePromises);
-            }
-        } catch (error) {
-            console.error('予算データの削除に失敗しました:', error);
+            await deleteCategoryMutation.mutateAsync(categoryId);
+            await deleteBudgetMutation.mutateAsync(categoryName);
         }
     }
     
@@ -279,11 +278,7 @@ export default function CategoryForm({ categories, expenses, expenseData, setExp
      * @param {string} newColor - 新しい色のHEXコード
      */
     const handleColorChange = async (categoryId, newColor) => {
-        try {
-            await updateColorMutation.mutateAsync()
-        } catch (error) {
-            console.error('カテゴリーの色更新に失敗しました', error);
-        }
+        await updateColorMutation.mutateAsync({ categoryId, newColor });
     };
 
     return (
