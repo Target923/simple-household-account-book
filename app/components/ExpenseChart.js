@@ -6,6 +6,7 @@
 
 'use client';
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import styles from './ExpenseChart.module.css';
 import { CATEGORY_COLORS } from './category_colors';
@@ -17,22 +18,18 @@ import { PieChart, Pie } from 'recharts';
  * 支出とカテゴリーデータを基に、円グラフと予算グラフを表示するコンポーネント
  * @param {object} props - コンポーネントプロパティ
  * @param {Array<object>} props.expenses - 支出リスト
- * @param {function} props.setExpenses - 支出リスト更新関数
+ * @param {function} props.budgets - 予算データリスト
  * @param {Array<object>} props.categories - カテゴリーリスト
  * @param {Date} props.selectedDate - 選択された日付
  * @returns {JSX.Element} 支出チャートコンポーネント
  */
-export default function ExpenseList({ expenses, setExpenses, categories, selectedDate, }) {
+export default function ExpenseList({ expenses, budgets, categories, selectedDate, }) {
+
+    const queryClient = useQueryClient();
+
     // ================================
     // State管理
     // ================================
-
-    /**
-     * 予算データの状態管理state
-     * 各カテゴリの月別予算情報を管理
-     * @type {[Array<object>, React.Dispatch<React.SetStateAction<Array<object>>>]}
-     */
-    const [budgets, setBudgets] = useState([]);
 
     /**
      * 円グラフの表示モード状態管理（'day'/'month' 'category'/'amount'）
@@ -85,22 +82,52 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
     };
 
     // ================================
-    // コールバック関数
+    // mutation
     // ================================
 
-    const fetchBudgets = useCallback(async () => {
-        try {
-            const response = await fetch('/api/budgets');
-            if (response.ok) {
-                const budgetsData = await response.json();
-                setBudgets(budgetsData);
-            } else {
-                console.error('予算データの取得に失敗しました');
+    const updateBudgetMutation = useMutation({
+        mutationFn: async (updatedBudget) => {
+            const response = await fetch(`/api/budgets/${updatedBudget.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedBudget),
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || '予算データの更新に失敗しました');
             }
-        } catch (error) {
-            console.error('予算データの取得エラー:', error);
-        }
-    }, []);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['budgets']);
+        },
+        onError: (error) => {
+            alert(error.message);
+        },
+    });
+
+    const createBudgetMutation = useMutation({
+        mutationFn: async (newBudgetData) => {
+            const response = await fetch('/api/budgets', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newBudgetData),
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || '予算データの保存に失敗しました');
+            }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['budgets']);
+        },
+        onError: (error) => {
+            alert(error.message);
+        },
+    });
+
+    // ================================
+    // callback
+    // ================================
 
     /**
      * 特定の月とカテゴリの支出合計を計算する関数
@@ -167,71 +194,39 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
 
     /**
      * 予算をAPIに保存/更新
-     * @param {string} categoryId - カテゴリID
      * @param {string} categoryName - カテゴリ名
      * @param {number} amount - 予算額
      * @param {string} month - 対象月
      */
-    const saveBudgetsToAPI = useCallback(async (categoryId, categoryName, amount, month) => {
-        try {
-            const existingBudget = budgets.find(b =>
-                b.categoryName === categoryName && b.month === month
-            );
+    const saveBudgetsToAPI = useCallback(async (categoryName, amount, month) => {
+        const existingBudget = budgets.find(b =>
+            b.categoryName === categoryName && b.month === month
+        );
 
-            const budgetAmount = parseFloat(amount);
+        const budgetAmount = parseFloat(amount);
 
-            if (existingBudget) {
-                const response = await fetch(`/api/budgets/${existingBudget.id}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        amount: budgetAmount,
-                        categoryName: categoryName,
-                        month: month,
-                        sortOrder: existingBudget.sortOrder || 0,
-                    }),
-                });
+        if (existingBudget) {
+            const updatedBudget = ({
+                id: existingBudget.id,
+                amount: budgetAmount,
+                categoryName: categoryName,
+                month: month,
+                sortOrder: existingBudget.sortOrder || 0,
+            });
 
-                if (response.ok) {
-                    const updatedBudget = await response.json();
-                    setBudgets(prevBudgets =>
-                        prevBudgets.map(b =>
-                            b.id === existingBudget.id ? updatedBudget : b
-                        )
-                    );
-                } else {
-                    const errorData = await response.json();
-                    alert(`予算の更新に失敗しました: ${errorData.error}`);
-                }
-            } else {
-                const response = await fetch('/api/budgets', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        amount: budgetAmount,
-                        categoryName: categoryName,
-                        month: month,
-                        sortOrder: budgets.length,
-                    }),
-                });
+            await updateBudgetMutation.mutateAsync(updatedBudget);
 
-                if (response.ok) {
-                    const newBudget = await response.json();
-                    setBudgets(prevBudgets => [...prevBudgets, newBudget]);
-                } else {
-                    const errorData = await response.json();
-                    alert(`予算の作成に失敗しました: ${errorData.error}`);
-                }
-            }
-        } catch (error) {
-            console.error('予算の保存に失敗しました:', error);
-            alert('予算の保存に失敗しました');
+        } else {
+            const newBudgetData = ({
+                amount: budgetAmount,
+                categoryName: categoryName,
+                month: month,
+                sortOrder: budgets.length,
+            });
+
+            await createBudgetMutation.mutateAsync(newBudgetData);
         }
-    }, [budgets]);
+    }, [budgets, updateBudgetMutation, createBudgetMutation]);
 
     // ================================
     // Memo計算
@@ -359,8 +354,8 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
      * @param {string} categoryName - カテゴリ名
      * @param {number} amount - 予算額
      */
-    const handleSetBudget = useCallback(async (categoryId, categoryName, amount) => {
-        await saveBudgetsToAPI(categoryId, categoryName, amount, currentMonth);
+    const handleSetBudget = useCallback(async (categoryName, amount) => {
+        await saveBudgetsToAPI(categoryName, amount, currentMonth);
         setEditingBudgetId(null);
         setBudgetInputValue('');
     }, [saveBudgetsToAPI, currentMonth]);
@@ -538,14 +533,14 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
                                             placeholder="予算額"
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter') {
-                                                    handleSetBudget(category.id, category.name, Number(budgetInputValue))
+                                                    handleSetBudget(category.name, Number(budgetInputValue))
                                                 }
                                             }}
                                             autoFocus
                                         />
                                         <div
                                             className={styles.budgetDetailsButton}
-                                            onClick={() => handleSetBudget(category.id, category.name, Number(budgetInputValue))}
+                                            onClick={() => handleSetBudget(category.name, Number(budgetInputValue))}
                                         >
                                             保存
                                         </div>
@@ -644,13 +639,6 @@ export default function ExpenseList({ expenses, setExpenses, categories, selecte
     // ================================
     // useEffect（副作用処理）
     // ================================
-
-    /**
-     * コンポーネントマウント時に予算データをAPIから取得
-     */
-    useEffect(() => {
-        fetchBudgets();
-    }, [fetchBudgets]);
 
     /**
      * 円グラフのサイズ管理とリサイズ対応

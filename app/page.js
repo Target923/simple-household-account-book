@@ -66,17 +66,17 @@ async function fetchBudgets() {
 function HomeContent() {
   const { data: session, status } = useSession();
 
-  const { data: categories, isPending: isCategoriesPending, error: categoriesError } = useQuery({
+  const { data: categories, isLoading: isCategoriesLoading, error: categoriesError } = useQuery({
     queryKey: ['categories'],
     queryFn: fetchCategories,
     enabled: status === 'authenticated', // 認証済みの場合
   });
-  const { data: expenses, isPending: isExpensesPending, error: expensesError } = useQuery({
+  const { data: expenses, isPending: isExpensesLoading, error: expensesError } = useQuery({
     queryKey: ['expenses'],
     queryFn: fetchExpenses,
     enabled: status === 'authenticated',
   });
-  const { data: budgets, isPending: isBudgetsPending, error: budgetsError } = useQuery({
+  const { data: budgets, isPending: isBudgetsLoading, error: budgetsError } = useQuery({
     queryKey: ['budgets'],
     queryFn: fetchBudgets,
     enabled: status === 'authenticated',
@@ -128,7 +128,7 @@ function HomeContent() {
   });
 
   useEffect(() => {
-    if (status === 'authenticated' && !isCategoriesPending && categories && categories.length === 0) {
+    if (status === 'authenticated' && !isCategoriesLoading && categories && categories.length === 0) {
       const initialCategories = [
         { name: '食費', color: CATEGORY_COLORS[0], sortOrder: 0 },
         { name: '交通費', color: CATEGORY_COLORS[1], sortOrder: 1 },
@@ -136,7 +136,7 @@ function HomeContent() {
       ];
       createInititalCategoriesMutation.mutate(initialCategories);
     }
-  }, [status, isCategoriesPending, categories, createInititalCategoriesMutation]);
+  }, [status, isCategoriesLoading, categories, createInititalCategoriesMutation]);
 
   if (status === 'loading') {
     return <div>Loading...</div>;
@@ -147,7 +147,7 @@ function HomeContent() {
     );
   }
 
-  if (isCategoriesPending || isExpensesPending || isBudgetsPending) {
+  if (isCategoriesLoading || isExpensesLoading || isBudgetsLoading) {
     return <div>データを読み込み中...</div>;
   }
   if (categoriesError || expensesError || budgetsError) {
@@ -170,7 +170,6 @@ function HomeContent() {
       <ExpenseForm 
         categories={categories}
         expenses={expenses} 
-        // setExpenses={setExpenses}
         expenseData={expenseData} setExpenseData={setExpenseData}
         selectedDate={selectedDate} setSelectedDate={setSelectedDate}
         editingExpense={editingExpense} setEditingExpense={setEditingExpense}
@@ -182,7 +181,7 @@ function HomeContent() {
         setEditingExpense={setEditingExpense} setIsEditMode={setIsEditMode} />
       <ExpenseChart
         expenses={expenses}
-        // setExpenses={setExpenses}
+        budgets={budgets}
         categories={categories}
         selectedDate={selectedDate} />
     </main>

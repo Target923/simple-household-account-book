@@ -24,8 +24,10 @@ export default function ExpenseForm({ categories, expenses, expenseData, setExpe
                 throw new Error(errorData.error || '支出の保存に失敗しました');
             }
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries(['expenses']);
+        onSuccess: (newlyCreatedExpense) => {
+            queryClient.setQueryData(['expenses'], (oldExpense) => {
+                return oldExpense ? [...oldExpense, newlyCreatedExpense] : [newlyCreatedExpense];
+            })
             setExpenseData({ ...expenseData, amount: '', memo: '', });
         },
         onError: (error) => {
@@ -153,7 +155,6 @@ export default function ExpenseForm({ categories, expenses, expenseData, setExpe
         const categoryName = selectedCategoryObject ? selectedCategoryObject.name : 'No Category';
 
         const newExpenseData = ({
-            id: Date.now().toString(),
             date: expenseData.date,
             amount: Number(expenseData.amount) || 0,
             memo: expenseData.memo,

@@ -610,7 +610,7 @@ export default function CustomCalendar({ expenses, categories, selectedDate, set
                         const data = JSON.parse(eventEl.getAttribute('data-expense'));
                         return {
                             ...data,
-                            id: crypto.randomUUID(),
+                            id: data.id,
                             title: `${data.selectedCategoryName}: ${data.amount}円`,
                             editable: true,
                             eventType: 'total',
