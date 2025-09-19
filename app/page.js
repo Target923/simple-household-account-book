@@ -10,7 +10,7 @@ import CustomCalendar from "./components/CustomCalendar";
 import ExpenseChart from "./components/ExpenseChart";
 import LoginForm from './components/LoginForm';
 
-import { CATEGORY_COLORS } from "../../components/category_colors";
+import { CATEGORY_COLORS } from "./components/category_colors";
 
 /**
  * QueryClientインスタンス作成

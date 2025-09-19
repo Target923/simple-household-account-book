@@ -1,10 +1,62 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import styles from './ExpenseForm.module.css'
 
-export default function ExpenseForm({ categories, expenses, setExpenses, expenseData, setExpenseData, selectedDate, setSelectedDate, editingExpense, setEditingExpense, isEditMode, setIsEditMode }) {
+export default function ExpenseForm({ categories, expenses, expenseData, setExpenseData, selectedDate, setSelectedDate, editingExpense, setEditingExpense, isEditMode, setIsEditMode }) {
     const inputRef = useRef(null);
+    const queryClient = useQueryClient();
+
+    // ================================
+    // useMutation
+    // ================================
+
+    const createExpenseMutation = useMutation({
+        mutationFn: async (newExpenseData) => {
+            const response = await fetch('/api/expenses', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newExpenseData),
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || '支出の保存に失敗しました');
+            }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['expenses']);
+            setExpenseData({ ...expenseData, amount: '', memo: '', });
+        },
+        onError: (error) => {
+            alert(error.message);
+        }
+    });
+
+    const updateExpenseMutation = useMutation({
+        mutationFn: async (updatedExpenseData) => {
+            const response = await fetch(`/api/expenses/${editingExpense.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedExpenseData),
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || '支出の更新に失敗しました');
+            }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['expenses']);
+            resetEditMode();
+        },
+        onError: (error) => {
+            alert(error.message);
+        }
+    });
+
+    // ================================
+    // useEffect
+    // ================================
 
     /**
      * selectedDate変更時、expenseData.dateを更新し、同期
@@ -40,6 +92,10 @@ export default function ExpenseForm({ categories, expenses, setExpenses, expense
             setSelectedDate(new Date(editingExpense.date));
         }
     }, [isEditMode, editingExpense, setExpenseData, setSelectedDate]);
+
+    // ================================
+    // ハンドラ系
+    // ================================
     
     /**
      * 各入力項目の変更時、expenseDataの状態を更新
@@ -93,104 +149,33 @@ export default function ExpenseForm({ categories, expenses, setExpenses, expense
      * state更新時、UIが自動的に再描画
      */
     async function saveExpenseDataInDB() {
-        try {
-            const selectedCategoryObject = categories.find(cat => cat.name === expenseData.selectedCategory);
-            const categoryName = selectedCategoryObject ? selectedCategoryObject.name : 'No Category';
+        const selectedCategoryObject = categories.find(cat => cat.name === expenseData.selectedCategory);
+        const categoryName = selectedCategoryObject ? selectedCategoryObject.name : 'No Category';
 
-            const newExpenseData = {
-                id: Date.now().toString(),
-                date: expenseData.date,
-                amount: Number(expenseData.amount) || 0,
-                memo: expenseData.memo,
-                selectedCategory: expenseData.selectedCategory,
-                selectedCategoryName: categoryName,
-                color: expenseData.color,
-            };
-
-            const response = await fetch('api/expenses', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(newExpenseData),
-            });
-
-            if (response.ok) {
-                const createdExpense = await response.json();
-
-                const expenseForState = {
-                    ...createdExpense,
-                    selectedCategory: categoryName,
-                    selectedCategoryName: categoryName,
-                    color: expenseData.color,
-                    date: new Date(createdExpense.date),
-                };
-
-                const updatedExpenses = [...expenses, expenseForState];
-                setExpenses(updatedExpenses);
-
-                setExpenseData({
-                    ...expenseData,
-                    amount: '',
-                    memo: '',
-                });
-            } else {
-                const errorData = await response.json();
-                alert(`支出の保存に失敗しました: ${errorData.error}`);
-            }
-        } catch (error) {
-            console.error('支出の保存に失敗しました:', error);
-            alert('支出の保存に失敗しました');
-        }
+        const newExpenseData = ({
+            id: Date.now().toString(),
+            date: expenseData.date,
+            amount: Number(expenseData.amount) || 0,
+            memo: expenseData.memo,
+            selectedCategory: expenseData.selectedCategory,
+            selectedCategoryName: categoryName,
+            color: expenseData.color,
+        });
+        await createExpenseMutation.mutateAsync(newExpenseData);
     }
 
     async function updateExpenseDataInDB() {
-        try {
-            const selectedCategoryObject = categories.find(cat => cat.name === expenseData.selectedCategory);
-            const categoryName = selectedCategoryObject ? selectedCategoryObject.name : 'No Category';
+        const selectedCategoryObject = categories.find(cat => cat.name === expenseData.selectedCategory);
+        const categoryName = selectedCategoryObject ? selectedCategoryObject.name : 'No Category';
 
-            const updatedExpenseData = {
-                date: expenseData.date,
-                amount: Number(expenseData.amount) || 0,
-                memo: expenseData.memo,
-                selectedCategory: categoryName,
-                sortOrder: editingExpense.sortOrder,
-            };
-
-            const response = await fetch(`/api/expenses/${editingExpense.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(updatedExpenseData),
-            });
-
-            if (response.ok) {
-                const updatedExpense = await response.json();
-
-                const expenseForState = {
-                    ...updatedExpense,
-                    selectedCategory: categoryName,
-                    selectedCategoryName: categoryName,
-                    color: expenseData.color,
-                    date: new Date(updatedExpense.date),
-                };
-
-                const updatedExpenses = expenses.map(exp =>
-                    exp.id === editingExpense.id ? expenseForState : exp
-                );
-
-                setExpenses(updatedExpenses);
-
-                resetEditMode();
-            } else {
-                const errorData = await response.json();
-                alert(`支出の更新に失敗しました: ${errorData.error}`);
-            }
-        } catch (error) {
-            console.error('支出更新に失敗しました:', error);
-            alert('支出の更新に失敗しました');
-        }
+        const updatedExpenseData = ({
+            date: expenseData.date,
+            amount: Number(expenseData.amount) || 0,
+            memo: expenseData.memo,
+            selectedCategory: categoryName,
+            sortOrder: editingExpense.sortOrder,
+        });
+        await updateExpenseMutation.mutateAsync(updatedExpenseData);
     }
 
     /**
